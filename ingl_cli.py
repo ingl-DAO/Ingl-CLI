@@ -85,7 +85,7 @@ def initialize_rebalancing(vote_key, keypair):
     vote_account_id = PublicKey(vote_key)
     print("Transaction ID: " + init_rebalance(payer_keypair, vote_account_id, client)['result'])
 
-@click.command(name="init_rebalance")
+@click.command(name="finalize_rebalance")
 @click.argument('vote_key')
 @click.option('--keypair', default = 'keypair.json')
 def finalize_rebalancing(vote_key, keypair):
