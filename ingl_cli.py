@@ -128,6 +128,21 @@ def process_create_vote_account(val_keypair):
     numeration = GlobalGems.parse(base64.urlsafe_b64decode(client.get_account_info(global_gem_pubkey)['result']['value']['data'][0])).proposal_numeration
     create_vote_account(payer_keypair, numeration-1, client)
 
+@click.command(name="get_vote_pubkey")
+@click.option('--numeration', '-n', default=None)
+def get_vote_pubkey(numeration):
+    if numeration:
+        expected_vote_pubkey, _expected_vote_pubkey_nonce = PublicKey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, "UTF-8"), int(numeration).to_bytes(4,"big")], ingl_constants.INGL_PROGRAM_ID)
+    else:
+        global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
+        numeration = GlobalGems.parse(base64.urlsafe_b64decode(client.get_account_info(global_gem_pubkey)['result']['value']['data'][0])).proposal_numeration - 1 
+        if numeration < 0:
+            print("Please precise the Proposal numeration using the '-n' command or the  '--numeration' command ")
+            return
+        expected_vote_pubkey, _expected_vote_pubkey_nonce = PublicKey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, "UTF-8"), (numeration).to_bytes(4,"big")], ingl_constants.INGL_PROGRAM_ID)
+        print("Vote account for Proposal No: ", numeration, "You can precise the specific proposal with the '-n' option")
+    print("Vote Pubkey: ", expected_vote_pubkey)
+
 
 entry.add_command(mint_nft_command)
 entry.add_command(reg_validator)
@@ -140,5 +155,6 @@ entry.add_command(create_new_collection)
 entry.add_command(close_val_proposal)
 entry.add_command(process_vote_account_rewards)
 entry.add_command(process_create_vote_account)
+entry.add_command(get_vote_pubkey)
 if __name__ == '__main__':
     entry()
