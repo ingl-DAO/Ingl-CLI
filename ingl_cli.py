@@ -15,33 +15,71 @@ client = Client("https://api.devnet.solana.com")
 def entry():
     pass
 
-@click.command(name="mint")
-@click.argument('gem_class')
+@click.group(name="mint")
 @click.option('--keypair', default = 'keypair.json')
-def mint_nft_command(gem_class, keypair):
-    match gem_class:
-        case 'Benitoite':
-            ret_class = ClassEnum.enum.Benitoite()
-        case 'Serendibite':
-            ret_class = ClassEnum.enum.Serendibite()
-        case 'Emerald':
-            ret_class = ClassEnum.enum.Emerald()
-        case 'Sapphire':
-            ret_class = ClassEnum.enum.Sapphire()
-        case 'Diamond':
-            ret_class = ClassEnum.enum.Diamond()
-        case 'Ruby':
-            ret_class = ClassEnum.enum.Ruby()
-        case _:
-            click.echo("Program does not recognize the provided Class as a valid one.\n\tOptions are:\n\t\tBenitoite\n\t\tSerendibite\n\t\tEmerald\n\t\tSapphire\n\t\tDiamond\n\t\tRuby")
-            ret_class = None
-    
-    if ret_class:
-        print("Client is connected" if client.is_connected() else "Client is Disconnected")
-        payer_keypair = keypair_from_json(f"./{keypair}")
-        mint_keypair = Keypair()
-        print("Mint_Id: ", mint_keypair.public_key)
-        print("Transaction ID: ", mint_nft(payer_keypair, mint_keypair, ret_class, client)['result'])
+def mint(keypair):
+    pass
+
+@click.command(name="Benitoite")
+@click.option('--keypair', default = 'keypair.json')
+def Benitoite(keypair):
+    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    payer_keypair = keypair_from_json(f"./{keypair}")
+    mint_keypair = Keypair()
+    print("Mint_Id: ", mint_keypair.public_key)
+    print("Transaction ID: ", mint_nft(payer_keypair, mint_keypair, ClassEnum.enum.Benitoite(), client)['result'])
+
+@click.command(name="Serendibite")
+@click.option('--keypair', default = 'keypair.json')
+def Serendibite(keypair):
+    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    payer_keypair = keypair_from_json(f"./{keypair}")
+    mint_keypair = Keypair()
+    print("Mint_Id: ", mint_keypair.public_key)
+    print("Transaction ID: ", mint_nft(payer_keypair, mint_keypair, ClassEnum.enum.Serendibite(), client)['result'])
+
+@click.command(name="Sapphire")
+@click.option('--keypair', default = 'keypair.json')
+def Sapphire(keypair):
+    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    payer_keypair = keypair_from_json(f"./{keypair}")
+    mint_keypair = Keypair()
+    print("Mint_Id: ", mint_keypair.public_key)
+    print("Transaction ID: ", mint_nft(payer_keypair, mint_keypair, ClassEnum.enum.Sapphire(), client)['result'])
+
+@click.command(name="Emerald")
+@click.option('--keypair', default = 'keypair.json')
+def Emerald(keypair):
+    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    payer_keypair = keypair_from_json(f"./{keypair}")
+    mint_keypair = Keypair()
+    print("Mint_Id: ", mint_keypair.public_key)
+    print("Transaction ID: ", mint_nft(payer_keypair, mint_keypair, ClassEnum.enum.Emerald(), client)['result'])
+
+@click.command(name="Diamond")
+@click.option('--keypair', default = 'keypair.json')
+def Diamond(keypair):
+    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    payer_keypair = keypair_from_json(f"./{keypair}")
+    mint_keypair = Keypair()
+    print("Mint_Id: ", mint_keypair.public_key)
+    print("Transaction ID: ", mint_nft(payer_keypair, mint_keypair, ClassEnum.enum.Diamond(), client)['result'])
+
+@click.command(name="Ruby")
+@click.option('--keypair', default = 'keypair.json')
+def Ruby(keypair):
+    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    payer_keypair = keypair_from_json(f"./{keypair}")
+    mint_keypair = Keypair()
+    print("Mint_Id: ", mint_keypair.public_key)
+    print("Transaction ID: ", mint_nft(payer_keypair, mint_keypair, ClassEnum.enum.Ruby(), client)['result'])
+
+mint.add_command(Benitoite)
+mint.add_command(Serendibite)
+mint.add_command(Emerald)
+mint.add_command(Sapphire)
+mint.add_command(Diamond)
+mint.add_command(Ruby)
 
 
 @click.command(name="create_validator_proposal")
@@ -125,7 +163,7 @@ def process_create_vote_account(val_keypair):
     payer_keypair = keypair_from_json(f"./{val_keypair}")
     global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
     numeration = GlobalGems.parse(base64.urlsafe_b64decode(client.get_account_info(global_gem_pubkey)['result']['value']['data'][0])).proposal_numeration
-    create_vote_account(payer_keypair, numeration-1, client)
+    print("Transaction Id: ", create_vote_account(payer_keypair, numeration-1, client)['result'])
 
 @click.command(name="get_vote_pubkey")
 @click.option('--numeration', '-n', default=None)
@@ -159,7 +197,7 @@ def find_vote_key(val_pubkey):
     print("Couldn't find a vote account with the specified authorized validator.")
     print("Check to see if validator Was winner of the latest proposal")
 
-entry.add_command(mint_nft_command)
+entry.add_command(mint)
 entry.add_command(reg_validator)
 entry.add_command(create_val_proposal)
 entry.add_command(finalize_validator_proposal)
