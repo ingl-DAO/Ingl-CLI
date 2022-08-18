@@ -169,7 +169,7 @@ def process_create_vote_account(val_keypair):
 @click.option('--numeration', '-n', default=None)
 def get_vote_pubkey(numeration):
     if numeration:
-        expected_vote_pubkey, _expected_vote_pubkey_nonce = PublicKey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, "UTF-8"), int(numeration-1).to_bytes(4,"big")], ingl_constants.INGL_PROGRAM_ID)
+        expected_vote_pubkey, _expected_vote_pubkey_nonce = PublicKey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, "UTF-8"), (int(numeration)-1).to_bytes(4,"big")], ingl_constants.INGL_PROGRAM_ID)
     else:
         global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
         numeration = GlobalGems.parse(base64.urlsafe_b64decode(client.get_account_info(global_gem_pubkey)['result']['value']['data'][0])).proposal_numeration - 1 
