@@ -1,4 +1,4 @@
-import click
+import asyncclick as click
 from instruction import keypair_from_json
 from processor import *
 from solana.keypair import Keypair
@@ -18,13 +18,14 @@ def entry():
 
 @click.group(name="mint")
 @click.option('--keypair', default = 'keypair.json')
-def mint(keypair):
+async def mint(keypair):
     pass
 
 @click.command(name="Benitoite")
 @click.option('--keypair', default = 'keypair.json')
 async def Benitoite(keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}")
     mint_keypair = Keypair()
     print("Mint_Id: ", mint_keypair.public_key)
@@ -34,7 +35,8 @@ async def Benitoite(keypair):
 @click.command(name="Serendibite")
 @click.option('--keypair', default = 'keypair.json')
 async def Serendibite(keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}")
     mint_keypair = Keypair()
     print("Mint_Id: ", mint_keypair.public_key)
@@ -44,7 +46,8 @@ async def Serendibite(keypair):
 @click.command(name="Sapphire")
 @click.option('--keypair', default = 'keypair.json')
 async def Sapphire(keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}")
     mint_keypair = Keypair()
     print("Mint_Id: ", mint_keypair.public_key)
@@ -54,7 +57,8 @@ async def Sapphire(keypair):
 @click.command(name="Emerald")
 @click.option('--keypair', default = 'keypair.json')
 async def Emerald(keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}")
     mint_keypair = Keypair()
     print("Mint_Id: ", mint_keypair.public_key)
@@ -64,7 +68,8 @@ async def Emerald(keypair):
 @click.command(name="Diamond")
 @click.option('--keypair', default = 'keypair.json')
 async def Diamond(keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}")
     mint_keypair = Keypair()
     print("Mint_Id: ", mint_keypair.public_key)
@@ -74,7 +79,8 @@ async def Diamond(keypair):
 @click.command(name="Ruby")
 @click.option('--keypair', default = 'keypair.json')
 async def Ruby(keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}")
     mint_keypair = Keypair()
     print("Mint_Id: ", mint_keypair.public_key)
@@ -92,7 +98,8 @@ mint.add_command(Ruby)
 @click.command(name="create_validator_proposal")
 @click.option('--keypair', default = 'keypair.json')
 async def create_val_proposal(keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}")
     global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
     gem_info = await client.get_account_info(global_gem_pubkey)
@@ -103,7 +110,8 @@ async def create_val_proposal(keypair):
 @click.command(name="finalize_proposal")
 @click.option('--keypair', default = 'keypair.json')
 async def finalize_validator_proposal(keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}")
 
     global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
@@ -117,7 +125,8 @@ async def finalize_validator_proposal(keypair):
 @click.option('--keypair', default = 'keypair.json')
 @click.argument('validator_keypair')
 async def reg_validator(validator_keypair, keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}")
     validator_keypair = keypair_from_json(f"{validator_keypair}")
     print("Validator Key: ", validator_keypair.public_key)
@@ -128,7 +137,8 @@ async def reg_validator(validator_keypair, keypair):
 @click.argument('vote_key')
 @click.option('--keypair', default = 'keypair.json')
 async def initialize_rebalancing(vote_key, keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}")
     vote_account_id = PublicKey(vote_key)
     t_dets = await init_rebalance(payer_keypair, vote_account_id, client)
@@ -138,7 +148,8 @@ async def initialize_rebalancing(vote_key, keypair):
 @click.argument('vote_key')
 @click.option('--keypair', default = 'keypair.json')
 async def finalize_rebalancing(vote_key, keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}")
     vote_account_id = PublicKey(vote_key)
     t_dets = await finalize_rebalance(payer_keypair, vote_account_id, client)
@@ -147,7 +158,8 @@ async def finalize_rebalancing(vote_key, keypair):
 @click.command(name="create_collection")
 @click.option('--keypair', default = 'keypair.json')
 async def create_new_collection(keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}")
     t_dets = await create_collection(payer_keypair, client)
     print("Transaction ID: ", t_dets['result'])
@@ -155,7 +167,8 @@ async def create_new_collection(keypair):
 @click.command(name="close_proposal")
 @click.option('--keypair', default = 'keypair.json')
 async def close_val_proposal(keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}")
     global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
     gem_info = await client.get_account_info(global_gem_pubkey)
@@ -167,7 +180,8 @@ async def close_val_proposal(keypair):
 @click.option('--keypair', default = 'keypair.json')
 @click.argument('vote_key')
 async def process_vote_account_rewards(keypair, vote_key):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{keypair}") 
     vote_account_id = PublicKey(vote_key)
     t_dets = await process_rewards(payer_keypair, vote_account_id, client)
@@ -176,7 +190,8 @@ async def process_vote_account_rewards(keypair, vote_key):
 @click.command(name='create_vote_account')
 @click.argument('val_keypair')
 async def process_create_vote_account(val_keypair):
-    print("Client is connected" if client.is_connected() else "Client is Disconnected")
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = keypair_from_json(f"./{val_keypair}")
     global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
     gem_info = await client.get_account_info(global_gem_pubkey)
