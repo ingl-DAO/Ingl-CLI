@@ -8,7 +8,7 @@ class Constants:
     INGL_MINT_AUTHORITY_KEY = "mint_authority"
     INGL_MINTING_POOL_KEY = "minting_pool"
     COLLECTION_HOLDER_KEY = "collection_holder"
-    INGL_PROGRAM_ID = PublicKey("9dSZN479QxPdogZTwjaBRiTfFAvhq3kNF1GEwUWW7es6")
+    INGL_PROGRAM_ID = PublicKey("4LzASGSZoAJecciq81AJNN7gbU8F18BQ4g8ZPjJvJL1m")
     STAKE_PROGRAM_ID = PublicKey("Stake11111111111111111111111111111111111111")
     GLOBAL_GEM_KEY = "global_gem_account"
     GEM_ACCOUNT_CONST = "gem_account"
@@ -92,3 +92,17 @@ ValidatorProposal = CStruct(
 
 def private_key_from_json(filepath):
     return base58.b58encode(keypair_from_json(filepath).secret_key).decode()
+
+class rpc_url:
+    DEVNET = "https://api.devnet.solana.com"
+    TESTNET = "https://api.testnet.solana.com"
+    MAINNET = "https://api.mainnet.solana.com"
+    target_network = DEVNET
+    
+    def get_explorer_suffix():
+        if rpc_url.target_network == rpc_url.DEVNET:
+            return "?cluster=devnet"
+        elif rpc_url.target_network == rpc_url.TESTNET:
+            return "?cluster=testnet"
+        else:
+            return ""
