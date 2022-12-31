@@ -132,6 +132,7 @@ ProgramUpgradeData = CStruct(
 )
 
 
+
 def private_key_from_json(filepath):
     return base58.b58encode(keypair_from_json(filepath).secret_key).decode()
 

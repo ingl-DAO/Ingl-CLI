@@ -432,7 +432,6 @@ async def undelegate_nft(payer_keypair: KeypairInput, mint_pubkey: PubkeyInput, 
         gem_account_meta,
         mint_associated_meta,
         global_gem_meta,
-        validator_account_meta,
         system_program_meta,
         authorized_withdrawer_meta,
 
