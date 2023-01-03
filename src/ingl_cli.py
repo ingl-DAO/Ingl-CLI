@@ -11,6 +11,7 @@ from .state import Constants as ingl_constants
 from rich import print
 from solana.rpc.async_api import AsyncClient
 from .cli_state import CLI_VERSION
+import os
 uasyncclient = Uasyncclient(rpc_url.target_network)
 
 @click.group()
@@ -91,12 +92,29 @@ async def create_val_proposal(keypair, log_level: int = 0):
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = parse_keypair_input(f"./{keypair}")
-    global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
+    global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], get_program_id())
     gem_info = await client.get_account_info(global_gem_pubkey)
     numeration = GlobalGems.parse(gem_info.value.data).proposal_numeration
     t_dets = await create_validator_proposal(payer_keypair, numeration, client, log_level)
     print(t_dets)
     await client.close()
+
+@click.command(name = "set_program")
+@click.argument("program_id")
+def set_program(program_id):
+    program_pubkey = parse_pubkey_input(program_id)
+    file_dir = os.path.expanduser('~')
+    try:
+        f = open(f'{file_dir}/.ingl_config.json', 'r')
+        config = json.load(f)
+    except:
+        f = open(f'{file_dir}/.ingl_config.json', 'w')
+        config = {}
+    f.close()
+    config['program_id'] = program_pubkey.public_key.__str__()
+    with open(f'{file_dir}/.ingl_config.json', 'w') as f:
+        json.dump(config, f)
+    print("Program ID set to: ", program_pubkey.public_key)
 
 '''
 Now Deprecated, do not use. Use create_vote_account instead.
@@ -111,7 +129,7 @@ async def finalize_validator_proposal(keypair, log_level: int = 0):
     # print("Client is connected" if client_state else "Client is Disconnected")
     # payer_keypair = parse_keypair_input(f"./{keypair}")
 
-    # global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
+    # global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], get_program_id())
     # gem_info = await client.get_account_info(global_gem_pubkey)
     # global_gems = GlobalGems.parse(gem_info.value.data)
     # numeration = global_gems.proposal_numeration
@@ -153,18 +171,16 @@ async def process_deallocate_gem(mint_id, keypair, log_level: int = 0):
 
 
 @click.command(name='register_validator')
-@click.option('--keypair', default = 'keypair.json')
 @click.argument('validator_keypair')
 @click.option('--log_level', default = '2')
-async def reg_validator(validator_keypair, keypair, log_level: int = 0):
+async def reg_validator(validator_keypair, log_level: int = 0):
     log_level = int(log_level)
     client = AsyncClient(rpc_url.target_network)
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
-    payer_keypair = parse_keypair_input(f"./{keypair}")
     validator_keypair = parse_keypair_input(f"{validator_keypair}")
     print("Validator Key: ", validator_keypair.public_key)
-    t_dets = await register_validator_id(payer_keypair, PubkeyInput(pubkey = validator_keypair.public_key), client, log_level)
+    t_dets = await register_validator_id(validator_keypair, client, log_level)
     print(t_dets)
     await client.close()
 
@@ -220,7 +236,7 @@ async def close_val_proposal(keypair, log_level: int = 0):
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = parse_keypair_input(f"./{keypair}")
-    global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
+    global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], get_program_id())
     gem_info = await client.get_account_info(global_gem_pubkey)
     numeration = GlobalGems.parse(gem_info.value.data).proposal_numeration
     t_dets = await close_proposal(payer_keypair, numeration-1, client, log_level)
@@ -251,7 +267,7 @@ async def process_create_vote_account(val_keypair, log_level: int = 0):
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = parse_keypair_input(f"./{val_keypair}")
-    global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
+    global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], get_program_id())
     gem_info = await client.get_account_info(global_gem_pubkey)
     global_gems = GlobalGems.parse(gem_info.value.data)
     numeration = global_gems.proposal_numeration
@@ -275,7 +291,7 @@ async def process_vote_validator_proposal(keypair, mint_id, validator_index, log
     print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = parse_keypair_input(f"./{keypair}")
     mint_pubkey = parse_pubkey_input(mint_id)
-    global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
+    global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], get_program_id())
     gem_info = await client.get_account_info(global_gem_pubkey)
     global_gems = GlobalGems.parse(gem_info.value.data)
     numeration = global_gems.proposal_numeration
@@ -314,7 +330,7 @@ async def process_undelegate_gem(keypair, mint_id, log_level: int = 0):
     print("Client is connected" if client_state else "Client is Disconnected")
     payer_keypair = parse_keypair_input(f"./{keypair}")
     mint_pubkey = parse_pubkey_input(mint_id)
-    gem_account_pubkey, _gem_account_bump = PublicKey.find_program_address([bytes(ingl_constants.GEM_ACCOUNT_CONST, 'UTF-8'), bytes(mint_pubkey.public_key)], ingl_constants.INGL_PROGRAM_ID)
+    gem_account_pubkey, _gem_account_bump = PublicKey.find_program_address([bytes(ingl_constants.GEM_ACCOUNT_CONST, 'UTF-8'), bytes(mint_pubkey.public_key)], get_program_id())
     gem_account = await client.get_account_info(gem_account_pubkey)
     gem_account_data = gem_account.value.data
     funds_location_data = gem_account_data[20:52]
@@ -338,14 +354,14 @@ async def process_create_upgrade_proposal(keypair, buffer, code_link, log_level:
     buffer_address = parse_pubkey_input(buffer)
 
     print(f"Code_Link: [link={code_link}]{code_link}[/link]")
-    global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
+    global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], get_program_id())
     gem_info = await client.get_account_info(global_gem_pubkey)
     numeration = GlobalGems.parse(gem_info.value.data).upgrade_proposal_numeration
     t_dets = await create_program_upgrade_proposal(payer_keypair, buffer_address, numeration, code_link, client, log_level)
     print(t_dets)
     await client.close()
 
-@click.command(name='create_upgrade_proposal')
+@click.command(name='vote_upgrade_proposal')
 @click.argument('vote')
 @click.argument('proposal')
 @click.argument('vote_account')
@@ -365,7 +381,7 @@ async def process_vote_upgrade_proposal(keypair, vote, proposal, vote_account, l
     print(t_dets)
     await client.close()
 
-@click.command(name='create_upgrade_proposal')
+@click.command(name='finalize_upgrade_proposal')
 @click.argument('proposal')
 @click.option('--keypair', default = 'keypair.json')
 @click.option('--log_level', default = '2')
@@ -386,14 +402,14 @@ async def process_finalize_upgrade_proposal(keypair, proposal, log_level: int = 
 @click.option('--numeration', '-n', default=None)
 def get_vote_pubkey(numeration):
     if numeration:
-        expected_vote_pubkey, _expected_vote_pubkey_nonce = PublicKey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, "UTF-8"), (int(numeration)-1).to_bytes(4,"big")], ingl_constants.INGL_PROGRAM_ID)
+        expected_vote_pubkey, _expected_vote_pubkey_nonce = PublicKey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, "UTF-8"), (int(numeration)-1).to_bytes(4,"big")], get_program_id())
     else:
-        global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
+        global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], get_program_id())
         numeration = GlobalGems.parse(uasyncclient.get_account_info(global_gem_pubkey).value.data).proposal_numeration - 1 
         if numeration < 0:
             print("Please precise the Proposal numeration using the '-n' command or the  '--numeration' command ")
             return
-        expected_vote_pubkey, _expected_vote_pubkey_nonce = PublicKey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, "UTF-8"), (numeration).to_bytes(4,"big")], ingl_constants.INGL_PROGRAM_ID)
+        expected_vote_pubkey, _expected_vote_pubkey_nonce = PublicKey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, "UTF-8"), (numeration).to_bytes(4,"big")], get_program_id())
         print("Vote account for Proposal No: ", numeration, ". You can precise the specific proposal with the '-n' option")
     print("Vote Pubkey: ", expected_vote_pubkey)
 
@@ -401,11 +417,11 @@ def get_vote_pubkey(numeration):
 @click.argument('val_pubkey')
 def find_vote_key(val_pubkey):
     val_pubkey = parse_pubkey_input(val_pubkey) 
-    global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], ingl_constants.INGL_PROGRAM_ID)
+    global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], get_program_id())
     numeration = GlobalGems.parse(uasyncclient.get_account_info(global_gem_pubkey).value.data).proposal_numeration
     for i in range(numeration):
-        expected_vote_pubkey, _expected_vote_pubkey_nonce = PublicKey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, "UTF-8"), (i).to_bytes(4,"big")], ingl_constants.INGL_PROGRAM_ID)
-        expected_vote_data_pubkey, _expected_vote_data_bump = PublicKey.find_program_address([bytes(ingl_constants.VOTE_DATA_ACCOUNT_KEY, 'UTF-8'), bytes(expected_vote_pubkey)], ingl_constants.INGL_PROGRAM_ID)
+        expected_vote_pubkey, _expected_vote_pubkey_nonce = PublicKey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, "UTF-8"), (i).to_bytes(4,"big")], get_program_id())
+        expected_vote_data_pubkey, _expected_vote_data_bump = PublicKey.find_program_address([bytes(ingl_constants.VOTE_DATA_ACCOUNT_KEY, 'UTF-8'), bytes(expected_vote_pubkey)], get_program_id())
         validator_id = PublicKey(InglVoteAccountData.parse(uasyncclient.get_account_info(expected_vote_data_pubkey).value.data).validator_id)
         if validator_id == val_pubkey.public_key:
             print("Vote_Pubkey: ", expected_vote_pubkey)
@@ -435,5 +451,6 @@ entry.add_command(process_undelegate_gem)
 entry.add_command(process_create_upgrade_proposal)
 entry.add_command(process_vote_upgrade_proposal)
 entry.add_command(process_finalize_upgrade_proposal)
+entry.add_command(set_program)
 if __name__ == '__main__':
     entry()

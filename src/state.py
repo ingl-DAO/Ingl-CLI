@@ -9,6 +9,7 @@ from solana.rpc import types
 from solana.rpc.async_api import AsyncClient
 from solana.transaction import Transaction
 from solders.rpc.responses import SendTransactionResp
+import os
 
 
 class Constants:
@@ -17,7 +18,6 @@ class Constants:
     INGL_MINTING_POOL_KEY = "minting_pool"
     INGL_TEAM_ACCOUNT = "ingl_team_key"
     COLLECTION_HOLDER_KEY = "collection_holder"
-    INGL_PROGRAM_ID = PublicKey("6Rw7Jif6Mx9BVdzk9rwZmuMQ9Edjygj1FSe2VJ7EaghA")
     STAKE_PROGRAM_ID = PublicKey("Stake11111111111111111111111111111111111111")
     BPF_LOADER_KEY = PublicKey("BPFLoaderUpgradeab1e11111111111111111111111")
     GLOBAL_GEM_KEY = "global_gem_account"
@@ -236,12 +236,12 @@ def parse_upgrade_proposal_id(proposal_pubkey: Optional[PublicKey], numeration: 
     proposal_account_pubkey = PublicKey(1)
     proposal_numeration = 0
     if numeration:
-        proposal_account_pubkey = PublicKey.find_program_address([bytes(Constants.UPGRADE_PROPOSAL_KEY, 'UTF-8'), (numeration).to_bytes(4,"big")], Constants.INGL_PROGRAM_ID)[0]
+        proposal_account_pubkey = PublicKey.find_program_address([bytes(Constants.UPGRADE_PROPOSAL_KEY, 'UTF-8'), (numeration).to_bytes(4,"big")], get_program_id())[0]
         proposal_numeration = numeration
         return proposal_account_pubkey, proposal_numeration
     else:
        while cnt > 0:
-            proposal_account_pubkey = PublicKey.find_program_address([bytes(Constants.UPGRADE_PROPOSAL_KEY, 'UTF-8'), (cnt-1).to_bytes(4,"big")], Constants.INGL_PROGRAM_ID)[0]
+            proposal_account_pubkey = PublicKey.find_program_address([bytes(Constants.UPGRADE_PROPOSAL_KEY, 'UTF-8'), (cnt-1).to_bytes(4,"big")], get_program_id())[0]
             if proposal_account_pubkey == proposal_pubkey.public_key:
                 proposal_numeration = cnt
                 break
@@ -255,12 +255,12 @@ def parse_validator_proposal_id(proposal_pubkey: Optional[PublicKey], numeration
     proposal_account_pubkey = PublicKey(1)
     proposal_numeration = 0
     if numeration:
-        proposal_account_pubkey = PublicKey.find_program_address([bytes(Constants.VOTE_ACCOUNT_KEY, 'UTF-8'), (numeration).to_bytes(4,"big")], Constants.INGL_PROGRAM_ID)[0]
+        proposal_account_pubkey = PublicKey.find_program_address([bytes(Constants.VOTE_ACCOUNT_KEY, 'UTF-8'), (numeration).to_bytes(4,"big")], get_program_id())[0]
         proposal_numeration = numeration
         return proposal_account_pubkey, proposal_numeration
     else:
        while cnt > 0:
-            proposal_account_pubkey = PublicKey.find_program_address([bytes(Constants.VOTE_ACCOUNT_KEY, 'UTF-8'), (cnt-1).to_bytes(4,"big")], Constants.INGL_PROGRAM_ID)[0]
+            proposal_account_pubkey = PublicKey.find_program_address([bytes(Constants.VOTE_ACCOUNT_KEY, 'UTF-8'), (cnt-1).to_bytes(4,"big")], get_program_id())[0]
             if proposal_account_pubkey == proposal_pubkey.public_key:
                 proposal_numeration = cnt
                 break
@@ -269,3 +269,13 @@ def parse_validator_proposal_id(proposal_pubkey: Optional[PublicKey], numeration
     if proposal_account_pubkey != proposal_pubkey.public_key:
         raise Exception("Proposal not found")
     return proposal_account_pubkey, proposal_numeration
+
+def get_program_id() -> PublicKey:
+    file_dir = os.path.expanduser('~')
+    try:
+        f = open(f'{file_dir}/.ingl_config.json', 'r')
+        config = json.load(f)
+        if 'program_id' in config:
+            return PublicKey(config['program_id'])
+    except:
+        return PublicKey("9cEsf8zjd6at4ZniTvDt4tpBDkZJS3RcRG1a9jVuVi4R")
