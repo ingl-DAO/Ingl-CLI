@@ -150,6 +150,16 @@ class rpc_url:
         else:
             return ""
 
+    def get_network_url(network):
+        if network == "devnet":
+            return rpc_url.DEVNET
+        elif network == "testnet":
+            return rpc_url.TESTNET
+        elif network == "mainnet":
+            return rpc_url.MAINNET
+        else:
+            raise Exception("Invalid network")
+
 
 
 class KeypairInput:
@@ -185,9 +195,14 @@ def parse_pubkey_input(str_input: String) -> PubkeyInput:
             return pubkey
         except Exception as e:
             if 'invalid public key input:' in str(e):
-                t_keypair = keypair_from_json(str_input)
-                return PubkeyInput(keypair=t_keypair, pubkey=t_keypair.public_key)
+                try:
+                    t_keypair = keypair_from_json(str_input)
+                    return PubkeyInput(keypair=t_keypair, pubkey=t_keypair.public_key)
+                except Exception as new_e:
+                    print("invalid public key input")
+                    raise new_e
             else:
+                print("invalid public key input")
                 raise e
 
 async def sign_and_send_tx(tx: Transaction, client: AsyncClient, *args) -> SendTransactionResp:
@@ -270,12 +285,63 @@ def parse_validator_proposal_id(proposal_pubkey: Optional[PublicKey], numeration
         raise Exception("Proposal not found")
     return proposal_account_pubkey, proposal_numeration
 
-def get_program_id() -> PublicKey:
-    file_dir = os.path.expanduser('~')
+
+def set_config(key: str, value: str):
+    file_dir = f"{os.path.expanduser('~')}/.config/solana/ingl/"
+    os.makedirs(file_dir, exist_ok=True)
+    file_dir = file_dir + "config.json"
     try:
-        f = open(f'{file_dir}/.ingl_config.json', 'r')
+        f = open(file_dir, 'r')
         config = json.load(f)
-        if 'program_id' in config:
-            return PublicKey(config['program_id'])
+        f.close()
+    except:
+        config = {}
+    config[key] = value
+    with open(file_dir, 'w') as f:
+        json.dump(config, f)
+
+def get_config(key: str) -> str:
+    file_dir = f"{os.path.expanduser('~')}/.config/solana/ingl/"
+    os.makedirs(file_dir, exist_ok=True)
+    file_dir = file_dir + "config.json"
+    try:
+        f = open(file_dir, 'r')
+        config = json.load(f)
+        f.close()
+        if key in config:
+            return config[key]
+        else:
+            return ""
+    except:
+        return ""
+
+
+def get_program_id() -> PublicKey:
+    program_id_str = get_config('program_id')
+    try:
+        return PublicKey(program_id_str)
     except:
         return PublicKey("9cEsf8zjd6at4ZniTvDt4tpBDkZJS3RcRG1a9jVuVi4R")
+
+def set_program_id(program_id: str):
+    set_config('program_id', program_id)
+
+def get_network() -> str:
+    network = get_config('network')
+    if network == "":
+        return rpc_url.get_network_url('devnet')
+    else:
+        return network
+
+def set_network(network: str):
+    set_config('network', network)
+
+def get_keypair_path() -> str:
+    keypair_path = get_config('keypair_path')
+    if keypair_path == "":
+        return f"{os.path.expanduser('~')}/.config/solana/ingl/id.json"
+    else:
+        return keypair_path
+    
+def set_keypair_path(keypair_path: str):
+    set_config('keypair_path', keypair_path)
