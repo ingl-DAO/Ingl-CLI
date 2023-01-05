@@ -19,6 +19,7 @@ async def ingl_init(payer_keypair: KeypairInput, client: AsyncClient, log_level:
     metadata_pda, _metadata_pda_bump = PublicKey.find_program_address([b"metadata", bytes(metaplex_program_id), bytes(mint_pubkey)], metaplex_program_id)
     master_edition_pda, _master_edition_bump = PublicKey.find_program_address([b"metadata", bytes(metaplex_program_id), bytes(mint_pubkey), b"edition"], metaplex_program_id)
     global_gem_pubkey, _global_gem_bump = PublicKey.find_program_address([bytes(ingl_constants.GLOBAL_GEM_KEY, 'UTF-8')], get_program_id())
+    ingl_config_pubkey, _ingl_config_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_CONFIG_ACCOUNT_KEY, 'UTF-8')], get_program_id())
 
 
     payer_account_meta = AccountMeta(payer_keypair.public_key, True, True)
@@ -34,6 +35,7 @@ async def ingl_init(payer_keypair: KeypairInput, client: AsyncClient, log_level:
     associated_program_meta = AccountMeta(spl_constants.ASSOCIATED_TOKEN_PROGRAM_ID, False, False)
     global_gem_meta = AccountMeta(global_gem_pubkey, False, True)
     edition_meta = AccountMeta(master_edition_pda, False, True)
+    ingl_config_meta = AccountMeta(ingl_config_pubkey, False, False)
 
     accounts = [
         payer_account_meta, 
@@ -47,6 +49,7 @@ async def ingl_init(payer_keypair: KeypairInput, client: AsyncClient, log_level:
         spl_program_meta,
         sysvar_rent_account_meta, 
         system_program_meta,
+        ingl_config_meta,
 
         system_program_meta, 
         spl_program_meta,
@@ -83,6 +86,7 @@ async def mint_nft(payer_keypair: KeypairInput, mint_keypair: KeypairInput, mint
     mint_edition_pda, _mint_edition_bump = PublicKey.find_program_address([b"metadata", bytes(metaplex_program_id), bytes(mint_keypair.public_key), b"edition"], metaplex_program_id)
     collection_account_pda, _collection_account_bump = PublicKey.find_program_address([b"metadata", bytes(metaplex_program_id), bytes(collection_mint_pubkey)], metaplex_program_id)
     gem_account_pubkey, _gem_account_bump = PublicKey.find_program_address([bytes(ingl_constants.GEM_ACCOUNT_CONST, 'UTF-8'), bytes(mint_keypair.public_key)], get_program_id())
+    ingl_config_pubkey, _ingl_config_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_CONFIG_ACCOUNT_KEY, 'UTF-8')], get_program_id())
     payer_account_meta = AccountMeta(payer_keypair.public_key, True, True)
     mint_account_meta = AccountMeta(mint_keypair.public_key, True, True)
     minting_pool_meta = AccountMeta(minting_pool_pubkey, False, True)
@@ -100,6 +104,7 @@ async def mint_nft(payer_keypair: KeypairInput, mint_keypair: KeypairInput, mint
     mint_edition_meta = AccountMeta(mint_edition_pda, False, True)
     collection_mint_meta = AccountMeta(collection_mint_pubkey, False, True)
     collection_account_meta = AccountMeta(collection_account_pda, False, True)
+    ingl_config_meta = AccountMeta(ingl_config_pubkey, False, False)
 
 
     accounts = [
@@ -118,6 +123,7 @@ async def mint_nft(payer_keypair: KeypairInput, mint_keypair: KeypairInput, mint
         mint_edition_meta,
         collection_mint_meta,
         collection_account_meta,
+        ingl_config_meta,
 
         system_program_meta,
         spl_program_meta,
@@ -142,7 +148,7 @@ async def mint_nft(payer_keypair: KeypairInput, mint_keypair: KeypairInput, mint
     except Exception as e:
         return(f"[warning]Error: {e}[/warning]")
 
-async def allocate_sol(payer_keypair: KeypairInput, mint_pubkey: PubkeyInput, client: AsyncClient, log_level: int = 0) -> str:
+async def allocate_sol(payer_keypair: KeypairInput, mint_pubkey: PubkeyInput, can_auto_delegate: bool, client: AsyncClient, log_level: int = 0) -> str:
     minting_pool_pubkey, _minting_pool_pubkey_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_MINTING_POOL_KEY, 'UTF-8')], get_program_id())
     pd_pool_pubkey, _pd_pool_pubkey_bump = PublicKey.find_program_address([bytes(ingl_constants.PD_POOL_KEY, 'UTF-8')], get_program_id())
     gem_account_pubkey, _gem_account_bump = PublicKey.find_program_address([bytes(ingl_constants.GEM_ACCOUNT_CONST, 'UTF-8'), bytes(mint_pubkey.public_key)], get_program_id())
@@ -174,7 +180,7 @@ async def allocate_sol(payer_keypair: KeypairInput, mint_pubkey: PubkeyInput, cl
     ]
 
     # print(accounts)
-    instruction_data = build_instruction(InstructionEnum.enum.AllocateNFT(log_level = log_level, ))
+    instruction_data = build_instruction(InstructionEnum.enum.AllocateNFT( can_auto_delegate= can_auto_delegate, log_level = log_level, ))
     transaction = Transaction()
     transaction.add(TransactionInstruction(accounts, get_program_id(), instruction_data))
     try:
@@ -896,6 +902,35 @@ async def finalize_program_upgrade_proposal(payer_keypair: KeypairInput, upgrade
 
     # print(accounts)
     instruction_data = build_instruction(InstructionEnum.enum.FinalizeProgramUpgradeProposal(log_level = log_level, proposal_numeration = proposal_numeration))
+    transaction = Transaction()
+    transaction.add(TransactionInstruction(accounts, get_program_id(), instruction_data))
+    try:
+        t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
+        await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+rpc_url.get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+    except Exception as e:
+        return(f"[warning]Error: {e}[/warning]")
+
+async def upload_uris(payer_keypair: KeypairInput, uris: List[List[str]], gem_class: ClassEnum.enum, generation: int, client: AsyncClient, log_level: int = 0) -> str:
+    config_account_key, _config_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_CONFIG_ACCOUNT_KEY, 'UTF-8')], get_program_id())
+
+    payer_account_meta = AccountMeta(pubkey = payer_keypair.public_key, is_signer = True, is_writable = True) # payer is the team address.
+    config_account_meta = AccountMeta(pubkey = config_account_key, is_signer = False, is_writable = True)
+    system_program_meta = AccountMeta(pubkey = system_program.SYS_PROGRAM_ID, is_signer = False, is_writable = False)
+
+    accounts = [
+        payer_account_meta,
+        config_account_meta,
+
+        system_program_meta,
+    ]
+    
+    classes = []
+    for i in range(int_from_class_enum(gem_class)):
+        classes.append([])
+    classes.append(uris)
+
+    instruction_data = build_instruction(InstructionEnum.enum.UploadUris(log_level = log_level, uris = classes, generation = generation))
     transaction = Transaction()
     transaction.add(TransactionInstruction(accounts, get_program_id(), instruction_data))
     try:

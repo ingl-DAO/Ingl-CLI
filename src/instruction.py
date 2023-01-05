@@ -9,7 +9,7 @@ InstructionEnum = Enum(
     "InglInit" / CStruct("log_level"/U8),
     "Redeem" / CStruct("log_level"/U8),
     "ImprintRarity" / CStruct("log_level"/U8),
-    "AllocateNFT" / CStruct("log_level"/U8),
+    "AllocateNFT" / CStruct("can_auto_delegate"/Bool, "log_level"/U8),
     "DeAllocateNFT" / CStruct("log_level"/U8),
     "CreateVoteAccount" / CStruct("log_level"/U8),
     "ChangeVoteAccountsValidatorIdentity" / CStruct("log_level"/U8),
@@ -30,6 +30,7 @@ InstructionEnum = Enum(
     "CreateProgramUpgradeProposal" / CStruct("code_link" / String, "log_level"/U8),
     "VoteProgramUpgradeProposal" / CStruct("numeration"/ U32, "vote"/ Bool, "validator_proposal_numeration"/ U32, "log_level"/U8),
     "FinalizeProgramUpgradeProposal" / CStruct("proposal_numeration" / U32, "log_level"/U8),
+    "UploadUris" / CStruct("uris"/ Vec[Vec[Vec[String]]], "generation" / U8, "log_level"/U8),
     
     enum_name = "InstructionEnum",
 )
