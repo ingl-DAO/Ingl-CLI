@@ -23,7 +23,7 @@ async def ingl_init(payer_keypair: KeypairInput, client: AsyncClient, log_level:
 
 
     payer_account_meta = AccountMeta(payer_keypair.public_key, True, True)
-    collection_holder_meta = AccountMeta(collection_holder_pubkey, False, True) #This might be the cause of a Writable escalated permission error.
+    collection_holder_meta = AccountMeta(collection_holder_pubkey, False, True)
     mint_account_meta = AccountMeta(mint_pubkey, False, True)
     mint_authority_meta = AccountMeta(mint_authority_pubkey, False, False)
     mint_associated_meta = AccountMeta(mint_associated_account_pubkey, False, True)
@@ -35,7 +35,7 @@ async def ingl_init(payer_keypair: KeypairInput, client: AsyncClient, log_level:
     associated_program_meta = AccountMeta(spl_constants.ASSOCIATED_TOKEN_PROGRAM_ID, False, False)
     global_gem_meta = AccountMeta(global_gem_pubkey, False, True)
     edition_meta = AccountMeta(master_edition_pda, False, True)
-    ingl_config_meta = AccountMeta(ingl_config_pubkey, False, False)
+    ingl_config_meta = AccountMeta(ingl_config_pubkey, False, True)
 
     accounts = [
         payer_account_meta, 
@@ -930,7 +930,7 @@ async def upload_uris(payer_keypair: KeypairInput, uris: List[List[str]], gem_cl
         classes.append([])
     classes.append(uris)
 
-    instruction_data = build_instruction(InstructionEnum.enum.UploadUris(log_level = log_level, uris = classes, generation = generation))
+    instruction_data = build_instruction(InstructionEnum.enum.UploadUris( uris = classes, generation = generation-1, log_level = log_level))
     transaction = Transaction()
     transaction.add(TransactionInstruction(accounts, get_program_id(), instruction_data))
     try:
@@ -938,4 +938,4 @@ async def upload_uris(payer_keypair: KeypairInput, uris: List[List[str]], gem_cl
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
         return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+rpc_url.get_explorer_suffix()}]{str(t_dets.value)}[/link]"
     except Exception as e:
-        return(f"[warning]Error: {e}[/warning]")
+        raise e
