@@ -174,8 +174,9 @@ async def finalize_validator_proposal(keypair, log_level):
 @click.command(name="allocate_gem")
 @click.argument('mint_id')
 @click.option('--keypair', '-k', default = get_keypair_path())
+@click.option('--can_auto_delegate', '-a', default = True, type=bool)
 @click.option('--log_level', '-l', default = '2', type=int)
-async def process_allocate_gem(mint_id, keypair, log_level):
+async def process_allocate_gem(mint_id, keypair, can_auto_delegate, log_level):
     client = AsyncClient(rpc_url.target_network)
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
@@ -189,7 +190,7 @@ async def process_allocate_gem(mint_id, keypair, log_level):
     except Exception as e:
         print("Invalid Public Key provided.")
         return
-    t_dets = await allocate_sol(payer_keypair, mint_pubkey, client, log_level)
+    t_dets = await allocate_sol(payer_keypair, mint_pubkey, can_auto_delegate, client, log_level)
     print(t_dets)
     await client.close()
 
