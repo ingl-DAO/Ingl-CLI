@@ -1,7 +1,7 @@
 from borsh_construct import *
 from solana.publickey import PublicKey
 from solana.transaction import TransactionInstruction, AccountMeta
-from .state import ClassEnum
+from .state import ClassEnum, Rarity
 
 
 InstructionEnum = Enum(
@@ -30,7 +30,8 @@ InstructionEnum = Enum(
     "CreateProgramUpgradeProposal" / CStruct("code_link" / String, "log_level"/U8),
     "VoteProgramUpgradeProposal" / CStruct("numeration"/ U32, "vote"/ Bool, "validator_proposal_numeration"/ U32, "log_level"/U8),
     "FinalizeProgramUpgradeProposal" / CStruct("proposal_numeration" / U32, "log_level"/U8),
-    "UploadUris" / CStruct("uris"/ Vec(Vec(Vec(String))), "generation" / U8, "log_level"/U8),
+    "UploadUris" / CStruct( "generation" / U8, "classenum" / U8, "rarity"/Option(U8), "uris"/ Vec(String), "log_level"/U8),
+    "ResetConfig" / CStruct("log_level"/U8),
     
     enum_name = "InstructionEnum",
 )

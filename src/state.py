@@ -65,6 +65,16 @@ ClassEnum = Enum(
     enum_name = "ClassEnum",
 )
 
+Rarity = Enum(
+    "Common",
+    "Uncommon",
+    "Rare",
+    "Exalted",
+    "Mythic",
+
+    enum_name = "Rarity",
+)
+
 def int_from_class_enum(class_enum: ClassEnum.enum) -> int:
     if class_enum == ClassEnum.enum.Ruby():
         return 0
@@ -336,7 +346,7 @@ def get_program_id() -> PublicKey:
     try:
         return PublicKey(program_id_str)
     except:
-        return PublicKey("3kRAqvQRmDYK81qLhxiRRQSXpP54LRE4zRHVgceSgq1g")
+        return PublicKey("AtTUCuWgLnPBiuVmoyXJJ1PbTXtQD81U569qAocvWRTQ")
 
 def set_program_id(program_id: str):
     set_config('program_id', program_id)

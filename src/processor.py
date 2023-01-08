@@ -8,6 +8,7 @@ from .instruction import *
 from .state import *
 from .state import Constants as ingl_constants
 from solana.rpc.async_api import AsyncClient
+from solana.rpc.api import Client
 from rich import print
 
 async def ingl_init(payer_keypair: KeypairInput, client: AsyncClient, log_level: int = 0) -> str:
@@ -911,7 +912,27 @@ async def finalize_program_upgrade_proposal(payer_keypair: KeypairInput, upgrade
     except Exception as e:
         return(f"[warning]Error: {e}[/warning]")
 
-async def upload_uris(payer_keypair: KeypairInput, uris: List[List[str]], gem_class: ClassEnum.enum, generation: int, client: AsyncClient, log_level: int = 0) -> str:
+async def reset_config(payer_keypair: KeypairInput, client: AsyncClient, log_level: int = 0) -> str :
+    config_account_key, _config_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_CONFIG_ACCOUNT_KEY, 'UTF-8')], get_program_id())
+    payer_account_meta = AccountMeta(pubkey = payer_keypair.public_key, is_signer = True, is_writable = True) # payer is the team address.
+    config_account_meta = AccountMeta(pubkey = config_account_key, is_signer = False, is_writable = True)
+
+    accounts = [
+        payer_account_meta,
+        config_account_meta,
+    ]
+
+    instruction_data = build_instruction(InstructionEnum.enum.ResetConfig(log_level = log_level))
+    transaction = Transaction()
+    transaction.add(TransactionInstruction(accounts, get_program_id(), instruction_data))
+    try:
+        t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
+        await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+rpc_url.get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+    except Exception as e:
+        return(f"[warning]Error: {e}[/warning]")
+
+def upload_uris(payer_keypair: KeypairInput, uris: List[str], gem_class: ClassEnum.enum, rarity: Optional[Rarity.enum], generation: int, client: Client, log_level: int = 0) -> str:
     config_account_key, _config_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_CONFIG_ACCOUNT_KEY, 'UTF-8')], get_program_id())
 
     payer_account_meta = AccountMeta(pubkey = payer_keypair.public_key, is_signer = True, is_writable = True) # payer is the team address.
@@ -924,18 +945,17 @@ async def upload_uris(payer_keypair: KeypairInput, uris: List[List[str]], gem_cl
 
         system_program_meta,
     ]
-    
-    classes = []
-    for i in range(int_from_class_enum(gem_class)):
-        classes.append([])
-    classes.append(uris)
 
-    instruction_data = build_instruction(InstructionEnum.enum.UploadUris( uris = classes, generation = generation-1, log_level = log_level))
-    transaction = Transaction()
-    transaction.add(TransactionInstruction(accounts, get_program_id(), instruction_data))
+    t_dets = None
     try:
-        t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
-        await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
+        instruction_data = build_instruction(InstructionEnum.enum.UploadUris(uris = uris, generation = generation, classenum=int.from_bytes(ClassEnum.build(gem_class), "big"), rarity = int.from_bytes(Rarity.build(rarity), "big") if rarity else rarity, log_level = log_level))
+        # print(instruction_data)
+        transaction = Transaction()
+        transaction.add(ComputeBudgetInstruction().set_compute_unit_limit(1_000_000, payer_keypair.public_key))
+        transaction.add(TransactionInstruction(accounts, get_program_id(), instruction_data))
+        t_dets = client.send_transaction(transaction, payer_keypair.keypair)
+
         return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+rpc_url.get_explorer_suffix()}]{str(t_dets.value)}[/link]"
     except Exception as e:
+        print(t_dets, e)
         raise e
