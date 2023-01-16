@@ -1,43 +1,93 @@
+from typing import Optional
 from borsh_construct import *
 from solana.publickey import PublicKey
 from solana.transaction import TransactionInstruction, AccountMeta
-from .state import ClassEnum
 
+
+InitStruct = CStruct(
+    "log_level" / U8,
+    "init_commission" / U8,
+    "max_primary_stake" / U64,
+    "nft_holders_share" / U8,
+    "initial_redemption_fee" / U8,
+    "is_validator_id_switchable" / Bool,
+    "unit_backing" / U64,
+    "redemption_fee_duration" / U32,
+    "proposal_quorum" / U8,
+    "creator_royalties" / U16,
+    "governance_expiration_time" / U32,
+    "rarities" / Vec(U16),
+    "rarity_names" / Vec(String),
+    "twitter_handle" / String,
+    "discord_invite" / String,
+    "validator_name" / String,
+    "collection_uri" / String,
+    "website" / String,
+)
 
 InstructionEnum = Enum(
-    "MintNft",
-    "InglInit" / CStruct("log_level"/U8),
+    "MintNft" / CStruct("switchboard_state_bump"/U8, "permission_bump"/U8, "log_level"/U8),
+    "ImprintRarity" / CStruct("log_level" / U8),
+    "Init" / InitStruct,
     "Redeem" / CStruct("log_level"/U8),
-    "ImprintRarity" / CStruct("log_level"/U8),
-    "AllocateNFT" / CStruct("can_auto_delegate"/Bool, "log_level"/U8),
-    "DeAllocateNFT" / CStruct("log_level"/U8),
-    "CreateVoteAccount" / CStruct("log_level"/U8),
-    "ChangeVoteAccountsValidatorIdentity" / CStruct("log_level"/U8),
-    "DelegateNFT" / CStruct("log_level"/U8),
-    "UnDelegateNFT" / CStruct("log_level"/U8),
-    "InitRarityImprint" / CStruct("log_level"/U8),
-    "RegisterValidatorId" / CStruct("log_level"/U8),
-    "CreateValidatorSelectionProposal" / CStruct("log_level"/U8),
-    "VoteValidatorProposal" / CStruct("num_nfts" /U8, "validator_index"/U32, "log_level"/U8),
-    "FinalizeProposal" / CStruct("log_level"/U8),
-    "ValidatorWithdraw" / CStruct("log_level"/U8),
     "NFTWithdraw" / CStruct("cnt" / U32, "log_level"/U8),
     "ProcessRewards" / CStruct("log_level"/U8),
-    "CloseProposal" / CStruct("log_level"/U8),
     "InitRebalance" / CStruct("log_level"/U8),
     "FinalizeRebalance" / CStruct("log_level"/U8),
-    "InjectTestingData" / CStruct("num_nfts" / U32, "log_level"/U8),
-    "CreateProgramUpgradeProposal" / CStruct("code_link" / String, "log_level"/U8),
-    "VoteProgramUpgradeProposal" / CStruct("numeration"/ U32, "vote"/ Bool, "validator_proposal_numeration"/ U32, "log_level"/U8),
-    "FinalizeProgramUpgradeProposal" / CStruct("proposal_numeration" / U32, "log_level"/U8),
-    "UploadUris" / CStruct("uris"/ Vec(Vec(Vec(String))), "generation" / U8, "log_level"/U8),
+    "UploadUris" / CStruct("uris"/ Vec(String), "rarity"/U8, "log_level"/U8),
+    "ResetUris" / CStruct("log_level"/U8),
+    "UnDelegateNFT" / CStruct("log_level"/U8),
+    "DelegateNFT" / CStruct("log_level"/U8),
+    "CreateVoteAccount" / CStruct("log_level"/U8),
+    "InitGovernance",
+    "VoteGovernance" / CStruct("numeration" / U32, "vote"/Bool, "cnt"/U8, "log_level"/U8),
+    "FinalizeGovernance" / CStruct("numeration"/U32, "log_level"/U8),
+    "ExecuteGovernance" / CStruct("numeration"/U32, "log_level"/U8),
     
     enum_name = "InstructionEnum",
 )
 
-def build_instruction(instruction: InstructionEnum.enum, mint_class: ClassEnum = None, log_level: int = None):
-    if instruction == InstructionEnum.enum.MintNft():
-        return InstructionEnum.build(instruction) +  ClassEnum.build(mint_class) + (log_level).to_bytes(1, "big")
+GovernanceType = Enum(
+    "ConfigAccount",
+    "ProgramUpgrade" / CStruct("buffer_account" / U8[32], "code_link" / String),
+    "VoteAccountGovernance",
+
+    enum_name = "GovernanceType",
+)
+
+ConfigAccountType = Enum(
+    "MaxPrimaryStake" / CStruct("value" / U64),
+    "NftHolderShare" / CStruct("value" / U8),
+    "InitialRedemptionFee" / CStruct("value" / U8),
+    "RedemptionFeeDuration" / CStruct("value" / U32),
+    "ValidatorName" / CStruct("value" / String),
+    "TwitterHandle" / CStruct("value" / String),
+    "DiscordInvite" / CStruct("value" / String),
+
+    enum_name = "ConfigAccountType",
+)
+
+VoteAccountGovernance = Enum(
+    "ValidatorId" / CStruct("value" / U8[32]),
+    "Commission" / CStruct("value" / U8),
+    enum_name = "VoteAccountGovernance",
+)
+
+
+def build_governance_type(governance_type: GovernanceType.enum, config_account_type:Optional[ConfigAccountType.enum] = None, vote_account_governance: Optional[VoteAccountGovernance.enum] = None):
+    if governance_type != GovernanceType.enum.ProgramUpgrade():
+        if governance_type == GovernanceType.enum.ConfigAccount():
+            return GovernanceType.build(governance_type) + ConfigAccountType.build(config_account_type)
+        elif governance_type == GovernanceType.enum.VoteAccountGovernance():
+            return GovernanceType.build(governance_type) + VoteAccountGovernance.build(vote_account_governance)
+        else:
+            raise Exception("Invalid governance type")
+    else:
+        return GovernanceType.build(governance_type)
+
+def build_instruction(instruction: InstructionEnum.enum, governance_type: Optional[GovernanceType.enum] = None, config_account_type:Optional[ConfigAccountType.enum] = None, vote_account_governance: Optional[VoteAccountGovernance.enum] = None, log_level: Optional[int] = None):
+    if instruction == InstructionEnum.enum.InitGovernance():
+        return InstructionEnum.build(instruction) +  build_governance_type(governance_type, config_account_type=config_account_type, vote_account_governance=vote_account_governance) + (log_level).to_bytes(1, "big")
     else:
         return InstructionEnum.build(instruction)
 
