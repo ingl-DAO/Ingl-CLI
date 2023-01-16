@@ -11,7 +11,7 @@ from .state import Constants as ingl_constants
 from rich import print
 from solana.rpc.async_api import AsyncClient
 from .cli_state import CLI_VERSION
-import os
+import time
 uasyncclient = Uasyncclient(rpc_url.target_network)
 
 @click.group()
@@ -344,6 +344,7 @@ async def process_execute_governance(keypair, numeration, log_level):
 @click.option('--log_level', '-l', default = 2, type=int)
 async def process_upload_uris(keypair, json_path, log_level):
     client_state = uasyncclient.is_connected()
+    client = AsyncClient(rpc_url.target_network)
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
         payer_keypair = parse_keypair_input(keypair)
@@ -362,9 +363,31 @@ async def process_upload_uris(keypair, json_path, log_level):
     for cnt, rarity in enumerate(uris):
         z = 0
         while z < len(rarity):
-            txs.append(upload_uris(payer_keypair, rarity[z:z+15], cnt, uasyncclient, log_level))
-            z += 15
-    print(txs)
+            txs.append(upload_uris(payer_keypair, rarity[z:z+11], cnt, uasyncclient, log_level).value)
+            z += 11
+        # print(txs)
+        await client.confirm_transaction(txs[-1], commitment='finalized')
+        print("Done with Rarity: ", json_data["rarity_names"][cnt])
+        time.sleep(3)
+    for i in txs:
+        print(f"Transaction Id: [link=https://explorer.solana.com/tx/{str(i)+rpc_url.get_explorer_suffix()}]{str(i)}[/link]")
+    await client.close()
+
+@click.command(name='reset_uris')
+@click.option('--keypair', '-k', default = get_keypair_path())
+@click.option('--log_level', '-l', default = 2, type=int)
+async def process_reset_uris(keypair, log_level):
+    client = AsyncClient(rpc_url.target_network)
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        payer_keypair = parse_keypair_input(keypair)
+    except Exception as e:
+        print("Invalid Keypair Input, ", e)
+        return
+    t_dets = await reset_uris(payer_keypair, client, log_level)
+    print(t_dets)
+    await client.close()
 
 
 
@@ -383,5 +406,6 @@ entry.add_command(process_execute_governance)
 entry.add_command(process_vote_account_rewards)
 entry.add_command(config)
 entry.add_command(process_upload_uris)
+entry.add_command(process_reset_uris)
 if __name__ == '__main__':
     entry()

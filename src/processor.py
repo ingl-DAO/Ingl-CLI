@@ -808,7 +808,37 @@ def upload_uris(payer_keypair: KeypairInput, uris: List[str], rarity: int, clien
         transaction.add(ComputeBudgetInstruction().set_compute_unit_limit(1_000_000, payer_keypair.public_key))
         transaction.add(TransactionInstruction(accounts, get_program_id(), instruction_data))
         t_dets = client.send_transaction(transaction, payer_keypair.keypair)
+        return t_dets
+    except Exception as e:
+        print(t_dets, e)
+        raise e
 
+async def reset_uris(payer_keypair: KeypairInput, client: AsyncClient, log_level: int = 0) -> str:
+    config_account_key, _config_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_CONFIG_SEED, 'UTF-8')], get_program_id())
+    uris_account_key, _config_bump = PublicKey.find_program_address([bytes(ingl_constants.URIS_ACCOUNT_SEED, 'UTF-8')], get_program_id())
+
+    payer_account_meta = AccountMeta(pubkey = payer_keypair.public_key, is_signer = True, is_writable = True)
+    config_account_meta = AccountMeta(pubkey = config_account_key, is_signer = False, is_writable = True)
+    system_program_meta = AccountMeta(pubkey = system_program.SYS_PROGRAM_ID, is_signer = False, is_writable = False)
+    uris_account_meta = AccountMeta(pubkey = uris_account_key, is_signer = False, is_writable = True)
+
+
+    accounts = [
+        payer_account_meta,
+        config_account_meta,
+        uris_account_meta,
+
+        system_program_meta,
+    ]
+
+    t_dets = None
+    try:
+        instruction_data = build_instruction(InstructionEnum.enum.ResetUris(log_level = log_level))
+        transaction = Transaction()
+        transaction.add(ComputeBudgetInstruction().set_compute_unit_limit(1_000_000, payer_keypair.public_key))
+        transaction.add(TransactionInstruction(accounts, get_program_id(), instruction_data))
+        t_dets = await client.send_transaction(transaction, payer_keypair.keypair)
+        await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
         return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+rpc_url.get_explorer_suffix()}]{str(t_dets.value)}[/link]"
     except Exception as e:
         print(t_dets, e)
