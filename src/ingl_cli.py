@@ -138,6 +138,7 @@ async def ingl(keypair, validator, log_level):
     validator_name = click.prompt("Enter the Name of the validator: ", type=str)
     collection_uri = click.prompt("Enter the Collection URI of the validator: ", type=str)
     website = click.prompt("Enter the Website of the validator: ", type=str)
+    default_uri = click.prompt("Enter the Default URI of the validator: ", type=str)
 
 
     client = AsyncClient(rpc_url.target_network)
@@ -154,7 +155,7 @@ async def ingl(keypair, validator, log_level):
         print("Invalid Validator Input. ")
         return
         
-    t_dets = await ingl_init(payer_keypair, validator_key, init_commission, max_primary_stake, nft_holders_share, initial_redemption_fee, is_validator_switchable, unit_backing, redemption_fee_duration, proposal_quorum, creator_royalty, governance_expiration_time, rarities, rarity_name, twitter_handle, discord_invite, validator_name, collection_uri, website, client, log_level,)
+    t_dets = await ingl_init(payer_keypair, validator_key, init_commission, max_primary_stake, nft_holders_share, initial_redemption_fee, is_validator_switchable, unit_backing, redemption_fee_duration, proposal_quorum, creator_royalty, governance_expiration_time, rarities, rarity_name, twitter_handle, discord_invite, validator_name, collection_uri, website, default_uri, client, log_level,)
     print(t_dets)
     await client.close()
 
@@ -389,6 +390,21 @@ async def process_reset_uris(keypair, log_level):
     print(t_dets)
     await client.close()
 
+@click.command(name='init_registry')
+@click.option('--keypair', '-k', default = get_keypair_path())
+async def process_initialize_registry(keypair):
+    client = AsyncClient(rpc_url.target_network)
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        payer_keypair = parse_keypair_input(keypair)
+    except Exception as e:
+        print("Invalid Keypair Input, ", e)
+        return
+    t_dets = await init_registry(payer_keypair, client)
+    print(t_dets)
+    await client.close()
+
 
 
 
@@ -407,5 +423,6 @@ entry.add_command(process_vote_account_rewards)
 entry.add_command(config)
 entry.add_command(process_upload_uris)
 entry.add_command(process_reset_uris)
+entry.add_command(process_initialize_registry)
 if __name__ == '__main__':
     entry()

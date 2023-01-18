@@ -11,7 +11,7 @@ from solana.rpc.async_api import AsyncClient
 from solana.rpc.api import Client
 from rich import print
 
-async def ingl_init(payer_keypair: KeypairInput, validator_pubkey: PubkeyInput, init_commission: int, max_primary_stake: int, nft_holders_share: int, initial_redemption_fee: int, is_validator_id_switchable: bool, unit_backing: int, redemption_fee_duration: int, proposal_quorum: int, creator_royalties: int, governance_expiration_time: int, rarities: List[int], rarity_names: List[str], twitter_handle: str, discord_invite: str, validator_name: str, collection_uri: str, website: str, client: AsyncClient, log_level: int = 0) -> str:
+async def ingl_init(payer_keypair: KeypairInput, validator_pubkey: PubkeyInput, init_commission: int, max_primary_stake: int, nft_holders_share: int, initial_redemption_fee: int, is_validator_id_switchable: bool, unit_backing: int, redemption_fee_duration: int, proposal_quorum: int, creator_royalties: int, governance_expiration_time: int, rarities: List[int], rarity_names: List[str], twitter_handle: str, discord_invite: str, validator_name: str, collection_uri: str, website: str, default_uri: str, client: AsyncClient, log_level: int = 0) -> str:
     mint_pubkey, _mint_pubkey_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_NFT_COLLECTION_KEY, 'UTF-8')], get_program_id())
     mint_authority_pubkey, _mint_authority_pubkey_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_MINT_AUTHORITY_KEY, 'UTF-8')], get_program_id())
     collection_holder_pubkey, _collection_holder_pubkey_bump = PublicKey.find_program_address([bytes(ingl_constants.COLLECTION_HOLDER_KEY, 'UTF-8')], get_program_id())
@@ -23,6 +23,12 @@ async def ingl_init(payer_keypair: KeypairInput, validator_pubkey: PubkeyInput, 
     general_account_pubkey, _general_account_bump = PublicKey.find_program_address([bytes(ingl_constants.GENERAL_ACCOUNT_SEED, 'UTF-8')], get_program_id())
     uris_account_pubkey, _uris_account_bump = PublicKey.find_program_address([bytes(ingl_constants.URIS_ACCOUNT_SEED, 'UTF-8')], get_program_id())
 
+    registry_program_config_key, _registry_program_config_bump = PublicKey.find_program_address([b'config'], ingl_constants.REGISTRY_PROGRAM_ID)
+    registry_config_account = await client.get_account_info(registry_program_config_key)
+    registry_config_data = RegistryConfig.parse(registry_config_account.value.data)
+    storage_numeration = registry_config_data.validator_numeration // 625
+    storage_key, _storage_bump = PublicKey.find_program_address([b'storage', storage_numeration.to_bytes(4, "big")], ingl_constants.REGISTRY_PROGRAM_ID)
+    print(registry_config_data)
 
     payer_account_meta = AccountMeta(payer_keypair.public_key, True, True)
     collection_holder_meta = AccountMeta(collection_holder_pubkey, False, True)
@@ -40,6 +46,11 @@ async def ingl_init(payer_keypair: KeypairInput, validator_pubkey: PubkeyInput, 
     general_account_meta = AccountMeta(general_account_pubkey, False, True)
     uris_account_meta = AccountMeta(uris_account_pubkey, False, True)
     validator_account_meta = AccountMeta(validator_pubkey.public_key, False, True)
+    registry_program_config_meta = AccountMeta(registry_program_config_key, False, True)
+    program_meta = AccountMeta(get_program_id(), False, False)
+    team_account_meta = AccountMeta(ingl_constants.TEAM_ACCOUNT_KEY, False, True)
+    storage_account_meta = AccountMeta(storage_key, False, True)
+    registry_program_meta = AccountMeta(ingl_constants.REGISTRY_PROGRAM_ID, False, False)
 
     accounts = [
         payer_account_meta, 
@@ -56,6 +67,10 @@ async def ingl_init(payer_keypair: KeypairInput, validator_pubkey: PubkeyInput, 
         edition_meta,
         spl_program_meta,
         system_program_meta,
+        registry_program_config_meta,
+        program_meta,
+        team_account_meta,
+        storage_account_meta,
 
         system_program_meta, 
         spl_program_meta,
@@ -65,9 +80,10 @@ async def ingl_init(payer_keypair: KeypairInput, validator_pubkey: PubkeyInput, 
         metadata_program_id,
         metadata_program_id,
         system_program_meta,
+        registry_program_meta,
     ]
     # print(accounts)
-    data = build_instruction(InstructionEnum.enum.Init(init_commission = init_commission, max_primary_stake = max_primary_stake, nft_holders_share = nft_holders_share, initial_redemption_fee = initial_redemption_fee, is_validator_id_switchable = is_validator_id_switchable, unit_backing = unit_backing, redemption_fee_duration = redemption_fee_duration, proposal_quorum = proposal_quorum, creator_royalties = creator_royalties, governance_expiration_time = governance_expiration_time, rarities = rarities, rarity_names = rarity_names, twitter_handle = twitter_handle, discord_invite = discord_invite, validator_name = validator_name, collection_uri = collection_uri, website = website, log_level = log_level))
+    data = build_instruction(InstructionEnum.enum.Init(init_commission = init_commission, max_primary_stake = max_primary_stake, nft_holders_share = nft_holders_share, initial_redemption_fee = initial_redemption_fee, is_validator_id_switchable = is_validator_id_switchable, unit_backing = unit_backing, redemption_fee_duration = redemption_fee_duration, proposal_quorum = proposal_quorum, creator_royalties = creator_royalties, governance_expiration_time = governance_expiration_time, rarities = rarities, rarity_names = rarity_names, twitter_handle = twitter_handle, discord_invite = discord_invite, validator_name = validator_name, collection_uri = collection_uri, website = website, default_uri = default_uri, log_level = log_level))
     transaction = Transaction()
     transaction.add(ComputeBudgetInstruction().set_compute_unit_limit(250_000, payer_keypair.public_key))
     transaction.add(TransactionInstruction(accounts, get_program_id(), data))
@@ -537,7 +553,7 @@ async def init_governance(payer_keypair: KeypairInput, mint: PubkeyInput, client
     proposal_numeration = PublicKey(GeneralData.parse(data.value.data).proposal_numeration)
     print(f"proposal_numeration: {proposal_numeration}")
     
-    proposal_pubkey, _proposal_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_PROPOSAL_KEY, 'UTF-8'), bytes(proposal_numeration)], get_program_id())
+    proposal_pubkey, _proposal_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_PROPOSAL_KEY, 'UTF-8'), (proposal_numeration).to_bytes(4, "big")], get_program_id())
 
     payer_account_meta = AccountMeta(pubkey = payer_keypair.public_key, is_signer = True, is_writable = True)
     vote_account_meta = AccountMeta(pubkey = vote_account_pubkey, is_signer = False, is_writable = False)
@@ -587,7 +603,7 @@ async def init_governance(payer_keypair: KeypairInput, mint: PubkeyInput, client
         return(f"Error: {e}")
 
 async def vote_governance(payer_keypair: KeypairInput, vote: Bool, proposal_numeration: int, mints: List[PublicKey], client: AsyncClient, log_level: int = 0) -> str:
-    proposal_pubkey, _proposal_account_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_PROPOSAL_KEY, 'UTF-8'), bytes(proposal_numeration)], get_program_id())
+    proposal_pubkey, _proposal_account_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_PROPOSAL_KEY, 'UTF-8'), (proposal_numeration)], get_program_id())
     
     print(f"Proposal_Account: {proposal_pubkey}, Vote: {'Approve' if vote else 'Dissaprove'} ");
     
@@ -627,7 +643,7 @@ async def vote_governance(payer_keypair: KeypairInput, vote: Bool, proposal_nume
         return(f"Error: {e}")
 
 async def finalize_governance(payer_keypair: KeypairInput, proposal_numeration: int, client: AsyncClient, log_level: int = 0) -> str:
-    proposal_account_key, _proposal_account_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_PROPOSAL_KEY, 'UTF-8'), bytes(proposal_numeration)], get_program_id())
+    proposal_account_key, _proposal_account_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_PROPOSAL_KEY, 'UTF-8'), (proposal_numeration)], get_program_id())
     config_account_key, _config_account_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_CONFIG_KEY, 'UTF-8')], get_program_id())
     general_account_key, _general_account_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_GENERAL_KEY, 'UTF-8')], get_program_id())
 
@@ -661,7 +677,7 @@ async def finalize_governance(payer_keypair: KeypairInput, proposal_numeration: 
         return(f"Error: {e}")
 
 async def execute_governance(payer_keypair: KeypairInput, proposal_numeration: int, client: AsyncClient, log_level: int = 0) -> str:
-    proposal_account_key, _proposal_account_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_PROPOSAL_KEY, 'UTF-8'), bytes(proposal_numeration)], get_program_id())
+    proposal_account_key, _proposal_account_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_PROPOSAL_KEY, 'UTF-8'), (proposal_numeration)], get_program_id())
     config_account_key, _config_account_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_CONFIG_KEY, 'UTF-8')], get_program_id())
     general_account_key, _general_account_bump = PublicKey.find_program_address([bytes(ingl_constants.INGL_GENERAL_KEY, 'UTF-8')], get_program_id())
     
@@ -837,6 +853,33 @@ async def reset_uris(payer_keypair: KeypairInput, client: AsyncClient, log_level
         transaction = Transaction()
         transaction.add(ComputeBudgetInstruction().set_compute_unit_limit(1_000_000, payer_keypair.public_key))
         transaction.add(TransactionInstruction(accounts, get_program_id(), instruction_data))
+        t_dets = await client.send_transaction(transaction, payer_keypair.keypair)
+        await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+rpc_url.get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+    except Exception as e:
+        print(t_dets, e)
+        raise e
+
+async def init_registry(payer_keypair: KeypairInput, client: AsyncClient,) -> str:
+    config_account_key, _config_bump = PublicKey.find_program_address([b'config'], ingl_constants.REGISTRY_PROGRAM_ID)
+
+    payer_account_meta = AccountMeta(pubkey = payer_keypair.public_key, is_signer = True, is_writable = True)
+    config_account_meta = AccountMeta(pubkey = config_account_key, is_signer = False, is_writable = True)
+    system_program_meta = AccountMeta(pubkey = system_program.SYS_PROGRAM_ID, is_signer = False, is_writable = False)
+
+
+    accounts = [
+        payer_account_meta,
+        config_account_meta,
+
+        system_program_meta,
+    ]
+
+    t_dets = None
+    try:
+        instruction_data = RegistryEnum.build(RegistryEnum.enum.InitConfig())
+        transaction = Transaction()
+        transaction.add(TransactionInstruction(accounts, ingl_constants.REGISTRY_PROGRAM_ID, instruction_data))
         t_dets = await client.send_transaction(transaction, payer_keypair.keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
         return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+rpc_url.get_explorer_suffix()}]{str(t_dets.value)}[/link]"

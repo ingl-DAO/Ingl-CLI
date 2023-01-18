@@ -29,12 +29,14 @@ class Constants:
     VALIDATOR_ID_SEED = "validator_ID___________________";
     T_STAKE_ACCOUNT_KEY = "t_stake_account_key";
     T_WITHDRAW_KEY = "t_withdraw_key";
+    INGL_REGISTRY_CONFIG_SEED = 'config'
 
     TEAM_ACCOUNT_KEY = PublicKey("Team111111111111111111111111111111111111111")
     STAKE_PROGRAM_ID = PublicKey("Stake11111111111111111111111111111111111111")
     STAKE_CONFIG_PROGRAM_ID = PublicKey("StakeConfig11111111111111111111111111111111")
     VOTE_PROGRAM_ID = PublicKey("Vote111111111111111111111111111111111111111")
     BPF_LOADER_UPGRADEABLE = PublicKey("BPFLoaderUpgradeab1e11111111111111111111111")
+    REGISTRY_PROGRAM_ID = PublicKey("38pfsot7kCZkrttx1THEDXEz4JJXmCCcaDoDieRtVuy5")
 
 
 def keypair_from_json(filepath):
@@ -101,6 +103,10 @@ GeneralData = CStruct(
     "last_validated_validator_id_proposal" / U32,
     "rebalancing_data" / RebalancingData,
     "vote_rewards" / Vec(VoteReward),
+)
+RegistryConfig  = CStruct(
+    "validation_phase" / U32,
+    "validator_numeration" / U32,
 )
 
 def private_key_from_json(filepath):

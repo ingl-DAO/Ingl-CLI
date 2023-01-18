@@ -23,6 +23,7 @@ InitStruct = CStruct(
     "validator_name" / String,
     "collection_uri" / String,
     "website" / String,
+    "default_uri" / String,
 )
 
 InstructionEnum = Enum(
@@ -73,6 +74,14 @@ VoteAccountGovernance = Enum(
     enum_name = "VoteAccountGovernance",
 )
 
+RegistryEnum = Enum(
+    "InitConfig",
+    "AddProgram",
+    "RemovePrograms" / CStruct("program_count" / U8 ),
+    "Blank",
+
+ enum_name="RegistryEnum",
+)
 
 def build_governance_type(governance_type: GovernanceType.enum, config_account_type:Optional[ConfigAccountType.enum] = None, vote_account_governance: Optional[VoteAccountGovernance.enum] = None):
     if governance_type != GovernanceType.enum.ProgramUpgrade():

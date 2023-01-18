@@ -9,13 +9,13 @@ setup(
     url = 'https://www.ingl.io',
     packages = find_packages(),
     install_requires = [
-        'Click',
-        'asyncclick',
-        'solana',
-        'borsh_construct',
-        'base58',
-        'rich',
-        'ledgerblue',
+        'click==8.1.3',
+        'asyncclick==8.1.3.4',
+        'solana==0.28.1',
+        'borsh-construct==0.1.0',
+        'base58==2.1.1',
+        'rich==13.0.1',
+        'ledgerblue==0.1.43',
         ],
     entry_points = '''
     [console_scripts]
