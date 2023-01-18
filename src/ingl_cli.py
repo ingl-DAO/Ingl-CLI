@@ -1,9 +1,9 @@
 import asyncclick as click
 from .instruction import *
 from .processor import *
-from solana.keypair import Keypair
+from solders.keypair import Keypair
 from solana.rpc.api import Client as Uasyncclient
-from solana.publickey import PublicKey
+from solders.pubkey import Pubkey
 from borsh_construct import *
 from .state import *
 from .utils import *
@@ -30,10 +30,10 @@ async def mint(keypair, log_level):
     try:
         payer_keypair = parse_keypair_input(keypair)
     except Exception as e:
-        print("Invalid Keypair Input. ")
+        print("Invalid Keypair Input. ", e)
         return
-    mint_keypair = KeypairInput(keypair = Keypair())
-    print("Mint_Id: ", mint_keypair.public_key)
+    mint_keypair = KeypairInput(t_keypair = Keypair())
+    print("Mint_Id: ", mint_keypair.pubkey)
     t_dets = await mint_nft(payer_keypair, mint_keypair, client, log_level)
     print(t_dets)
     await client.close()
@@ -54,16 +54,18 @@ def set(program_id, url, keypair):
         except Exception as e:
             print("Invalid Public Key provided.")
             return
-        set_program_id(program_pubkey.public_key.__str__())
-        print("Program ID set to: ", program_pubkey.public_key)
+        set_program_id(program_pubkey.pubkey.__str__())
+        print("Program ID set to: ", program_pubkey.pubkey)
     if url:
         if url.lower() == "mainnet" or url.lower() == "testnet" or url.lower() == "devnet":
             url = rpc_url.get_network_url(url)
         set_network(url)
         print("Network set to: ", url)
     if keypair:
-        set_keypair_path(keypair)
-        print("Keypair set to: ", keypair)
+        if set_keypair_path(keypair):
+            pass
+        else:
+            return
     if not program_id and not url and not keypair:
         print("No options specified. Use --help for more information.")
         return
@@ -76,7 +78,7 @@ def get():
     print("Network: ", get_network())
     print("Keypair: ", get_keypair_path())
     try:
-        print("Keypair Public Key: ", parse_keypair_input(get_keypair_path()).public_key)
+        print("Keypair Public Key: ", parse_keypair_input(get_keypair_path()).pubkey)
     except Exception as e:
         pass
     print("\nConfig retrieved successfully.")
@@ -121,16 +123,78 @@ async def finalize_rebalancing(keypair, log_level):
 @click.option('--keypair', '-k', default = get_keypair_path())
 @click.option('--log_level', '-l', default = 2, type=int)
 async def ingl(keypair, validator, log_level):
-    init_commission = click.prompt("Enter the Commission to be set for the validator: ", type=int)
-    max_primary_stake = click.prompt("Enter the maximum primary stake to be set for the validator: ", type=int)
-    nft_holders_share = click.prompt("Enter the NFT Holders Share to be set for the validator: ", type=int)
-    initial_redemption_fee = click.prompt("Enter the Initial Redemption Fee to be set for the validator: ", type=int)
-    is_validator_switchable = click.prompt("Is the validator switchable? (y/n): ", type=bool)
-    unit_backing = click.prompt("Enter the Unit Backing to be set for the validator: ", type=int)
-    redemption_fee_duration = click.prompt("Enter the Redemption Fee duration to be set for the validator: ", type=int)
-    proposal_quorum = click.prompt("Enter the Proposal Quorum to be set for governance proposals: ", type=int)
-    creator_royalty = click.prompt("Enter the Creator Royalty to be set for the validator: ", type=int)
-    governance_expiration_time = click.prompt("How long should a governance take to expire? (in seconds): ", type=int)
+
+    init_commission = 105
+    counter = 0
+    while init_commission > 100 or init_commission < 0:
+        if counter > 0:
+            print("Invalid Input.")
+        counter += 1
+        init_commission = click.prompt("Enter the Commission(%) to be set for the validator ( > 0, <=100)", type=int)
+    max_primary_stake = 1
+    counter = 0
+    while max_primary_stake < 1_030_000_000:
+        if counter > 0:
+            print("Invalid Input.")
+        counter += 1
+        max_primary_stake = click.prompt("Enter the maximum primary stake(in lamports) to be set for the validator (>1,030,000,000)", type=int)
+    nft_holders_share = 105
+    counter = 0
+    while nft_holders_share > 100 or nft_holders_share < 50:
+        if counter > 0:
+            print("Invalid Input.")
+        counter += 1
+        nft_holders_share = click.prompt("Enter the NFT Holders Share(%) to be set for the validator (>50, <=100)", type=int)
+    initial_redemption_fee = 26
+    counter = 0
+    while initial_redemption_fee > 25 or initial_redemption_fee < 0:
+        if counter > 0:
+            print("Invalid Input.")
+        counter += 1
+        initial_redemption_fee = click.prompt("Enter the Initial Redemption Fee(%) to be set for the validator (>=0, <=25)", type=int)
+    is_validator_switchable = None
+    counter = 0
+    while type(is_validator_switchable) != bool:
+        if counter > 0:
+            print("Invalid Input.")
+        counter += 1
+        is_validator_switchable = click.prompt("Is the validator switchable? (y/n) ", type=bool)
+    unit_backing = 1
+    counter = 0
+    while unit_backing < 1_030_000_000:
+        if counter > 0:
+            print("Invalid Input.")
+        counter += 1
+        unit_backing = click.prompt("Enter the Unit Backing(in lamports) to be set for the validator (>1,030,000,000) ", type=int)
+    redemption_fee_duration = 70_000_000
+    counter = 0
+    while redemption_fee_duration > 63_072_000:
+        if counter > 0:
+            print("Invalid Input.")
+        counter += 1
+        redemption_fee_duration = click.prompt("Enter the Redemption Fee duration(in seconds) to be set for the validator (<63,072,000)", type=int)
+    proposal_quorum = 60
+    counter = 0
+    while proposal_quorum < 65 or proposal_quorum > 100:
+        if counter > 0:
+            print("Invalid Input.")
+        counter += 1
+        proposal_quorum = click.prompt("Enter the Proposal Quorum(%) to be set for governance proposals (>=65, <=100) ", type=int)
+    creator_royalty = 300
+    counter = 0
+    while creator_royalty > 200 or creator_royalty < 0:
+        if counter > 0:
+            print("Invalid Input.")
+        counter += 1
+        creator_royalty = click.prompt("Enter the Creator Royalty(in basis points) to be set for the validator (>=0, <200)", type=int)
+    governance_expiration_time = 1
+    counter = 0
+    while governance_expiration_time < 35 or governance_expiration_time > 365:
+        if counter > 0:
+            print("Invalid Input.")
+        counter += 1
+        governance_expiration_time = click.prompt("How long should a governance take to expire? (in days) (>=35 days, <=365 days) ", type=int)
+    governance_expiration_time = governance_expiration_time * 86_400
     rarities = [100, 500, 1500, 2900, 5000]#TODO: Make this dynamic
     rarity_name = ['Mythic', 'Exalted', 'Rare', 'Uncommon', 'Common']#TODO: Make this dynamic
     twitter_handle = click.prompt("Enter the Twitter handle of the validator: ", type=str)
@@ -192,11 +256,11 @@ async def process_create_vote_account(val_keypair, log_level):
     print(t_dets)
     await client.close()
 
-@click.command(name='delegate_gem')
+@click.command(name='delegate')
 @click.argument('mint_id')
 @click.option('--keypair', '-k', default = get_keypair_path())
 @click.option('--log_level', '-l', default = 2, type=int)
-async def process_delegate_gem(keypair, mint_id, vote_account, log_level):
+async def process_delegate_gem(keypair, mint_id, log_level):
     client = AsyncClient(rpc_url.target_network)
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
@@ -214,7 +278,7 @@ async def process_delegate_gem(keypair, mint_id, vote_account, log_level):
     print(t_dets)
     await client.close()
 
-@click.command(name = 'undelegate_gem')
+@click.command(name = 'undelegate')
 @click.argument('mint_id')
 @click.option('--keypair', '-k', default = get_keypair_path())
 @click.option('--log_level', '-l', default = 2, type=int)
@@ -232,6 +296,7 @@ async def process_undelegate_gem(keypair, mint_id, log_level):
     except Exception as e:
         print("Invalid Public Key provided.")
         return
+    # print(payer_keypair, mint_pubkey)
     t_dets = await undelegate_nft(payer_keypair, mint_pubkey, client, log_level)
     print(t_dets)
     await client.close()
@@ -264,16 +329,20 @@ async def process_create_governance(keypair, mint_id, log_level):
         return
     if numeration == 0:
         value = click.prompt("Enter the new validator name: ", type=str)
-        t_dets = await init_governance(payer_keypair, mint_pubkey, client, config_account_type = ConfigAccountType.enum.ValidatorName(value = value), log_level = log_level)
+        title = click.prompt("Enter the new Proposal's Title", type=str)
+        description = click.prompt("Enter the Proposal's Description", type=str)
+        t_dets = await init_governance(payer_keypair, mint_pubkey, client, title = title, description = description, governance_type=GovernanceType.enum.ConfigAccount(), config_account_type = ConfigAccountType.enum.ValidatorName(value = value), log_level = log_level)
     elif numeration == 1:
         try:
-            buffer_address = parse_pubkey_input(click.prompt("Enter the buffer address: ", type=str)).public_key
+            buffer_address = parse_pubkey_input(click.prompt("Enter the buffer address: ", type=str)).pubkey
         except Exception as e:
             print("Invalid Public Key provided for buffer.")
             return
         code_link = click.prompt("Enter the code link: ", type=str)
+        title = click.prompt("Enter the new Proposal's Title", type=str)
+        description = click.prompt("Enter the Proposal's Description", type=str)
 
-        t_dets = await init_governance(payer_keypair, mint_pubkey, client, GovernanceType.enum.ProgramUpgrade(buffer_account = buffer_address, code_link = code_link), log_level)
+        t_dets = await init_governance(payer_keypair, mint_pubkey, client, title = title, description = description, governance_type = GovernanceType.enum.ProgramUpgrade(buffer_account = buffer_address, code_link = code_link), log_level = log_level)
     print(t_dets)
     await client.close()
 
@@ -299,7 +368,7 @@ async def process_vote_governance(keypair, mint, numeration, vote, log_level):
         print("Invalid Public Key provided for mint.")
         return
     vote = parse_vote(vote)
-    t_dets = await vote_governance(payer_keypair, vote, numeration, [mint_pubkey.public_key], client, log_level)
+    t_dets = await vote_governance(payer_keypair, vote, numeration, [mint_pubkey.pubkey], client, log_level)
     print(t_dets)
     await client.close()
 
@@ -371,7 +440,7 @@ async def process_upload_uris(keypair, json_path, log_level):
         print("Done with Rarity: ", json_data["rarity_names"][cnt])
         time.sleep(3)
     for i in txs:
-        print(f"Transaction Id: [link=https://explorer.solana.com/tx/{str(i)+rpc_url.get_explorer_suffix()}]{str(i)}[/link]")
+        print(f"Transaction Id: [link=https://explorer.solana.com/tx/{str(i)+get_explorer_suffix()}]{str(i)}[/link]")
     await client.close()
 
 @click.command(name='reset_uris')

@@ -1,9 +1,9 @@
 from ledgerblue.comm import getDongle
 import struct
 from solana.rpc.commitment import Finalized
-from solana.publickey import PublicKey
+from solders.pubkey import Pubkey
 from solana.transaction import *
-from solana.sysvar import *
+from solders.sysvar import *
 from solana.rpc.async_api import AsyncClient
 
 SOL_DERIVATION_PATH = "44'/501'/"
@@ -63,7 +63,7 @@ class ledgerDongle:
         path = self.get_derive_path(account, change)
         data = struct.pack(">BBBBB", LEDGER_CLA, INS_GET_PUBKEY, P1_NON_CONFIRM, 0,len(path)) + path
         response = self.dongle.exchange(data)
-        return PublicKey(response)
+        return Pubkey(response)
 
 
     def list(self, limit=5, page=0):
