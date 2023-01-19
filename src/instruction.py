@@ -92,7 +92,7 @@ def build_governance_type(governance_type: GovernanceType.enum, config_account_t
         print("This is being executed")
         return GovernanceType.build(governance_type)
 
-def build_instruction(instruction: InstructionEnum.enum, title: Optional[str], description: Optional[str], governance_type: Optional[GovernanceType.enum] = None, config_account_type:Optional[ConfigAccountType.enum] = None, vote_account_governance: Optional[VoteAccountGovernance.enum] = None, log_level: int = 0):
+def build_instruction(instruction: InstructionEnum.enum, title: Optional[str] = None, description: Optional[str] = None, governance_type: Optional[GovernanceType.enum] = None, config_account_type:Optional[ConfigAccountType.enum] = None, vote_account_governance: Optional[VoteAccountGovernance.enum] = None, log_level: int = 0):
     if instruction == InstructionEnum.enum.InitGovernance():
         return InstructionEnum.build(instruction) +  build_governance_type(governance_type, config_account_type=config_account_type, vote_account_governance=vote_account_governance) + String.build(title) + String.build(description) + (log_level).to_bytes(1, "big")
     else:
