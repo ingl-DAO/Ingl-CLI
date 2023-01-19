@@ -1,7 +1,7 @@
 from typing import Optional
 from borsh_construct import *
-from solana.publickey import PublicKey
-from solana.transaction import TransactionInstruction, AccountMeta
+from solders.pubkey import Pubkey
+from solders.instruction import Instruction, AccountMeta
 
 
 InitStruct = CStruct(
@@ -23,6 +23,7 @@ InitStruct = CStruct(
     "validator_name" / String,
     "collection_uri" / String,
     "website" / String,
+    "default_uri" / String,
 )
 
 InstructionEnum = Enum(
@@ -73,21 +74,27 @@ VoteAccountGovernance = Enum(
     enum_name = "VoteAccountGovernance",
 )
 
+RegistryEnum = Enum(
+    "InitConfig",
+    "AddProgram",
+    "RemovePrograms" / CStruct("program_count" / U8 ),
+    "Blank",
+
+ enum_name="RegistryEnum",
+)
 
 def build_governance_type(governance_type: GovernanceType.enum, config_account_type:Optional[ConfigAccountType.enum] = None, vote_account_governance: Optional[VoteAccountGovernance.enum] = None):
-    if governance_type != GovernanceType.enum.ProgramUpgrade():
-        if governance_type == GovernanceType.enum.ConfigAccount():
-            return GovernanceType.build(governance_type) + ConfigAccountType.build(config_account_type)
-        elif governance_type == GovernanceType.enum.VoteAccountGovernance():
-            return GovernanceType.build(governance_type) + VoteAccountGovernance.build(vote_account_governance)
-        else:
-            raise Exception("Invalid governance type")
+    if governance_type == GovernanceType.enum.ConfigAccount():
+        return GovernanceType.build(governance_type) + ConfigAccountType.build(config_account_type)
+    elif governance_type == GovernanceType.enum.VoteAccountGovernance():
+        return GovernanceType.build(governance_type) + VoteAccountGovernance.build(vote_account_governance)
     else:
+        print("This is being executed")
         return GovernanceType.build(governance_type)
 
-def build_instruction(instruction: InstructionEnum.enum, governance_type: Optional[GovernanceType.enum] = None, config_account_type:Optional[ConfigAccountType.enum] = None, vote_account_governance: Optional[VoteAccountGovernance.enum] = None, log_level: Optional[int] = None):
+def build_instruction(instruction: InstructionEnum.enum, title: Optional[str] = None, description: Optional[str] = None, governance_type: Optional[GovernanceType.enum] = None, config_account_type:Optional[ConfigAccountType.enum] = None, vote_account_governance: Optional[VoteAccountGovernance.enum] = None, log_level: int = 0):
     if instruction == InstructionEnum.enum.InitGovernance():
-        return InstructionEnum.build(instruction) +  build_governance_type(governance_type, config_account_type=config_account_type, vote_account_governance=vote_account_governance) + (log_level).to_bytes(1, "big")
+        return InstructionEnum.build(instruction) +  build_governance_type(governance_type, config_account_type=config_account_type, vote_account_governance=vote_account_governance) + String.build(title) + String.build(description) + (log_level).to_bytes(1, "big")
     else:
         return InstructionEnum.build(instruction)
 
@@ -102,16 +109,16 @@ class ComputeBudgetInstruction:
 
             enum_name = 'InstructionEnum',
         )
-        self.program_id = PublicKey("ComputeBudget111111111111111111111111111111")
+        self.program_id = Pubkey.from_string("ComputeBudget111111111111111111111111111111")
 
-    def request_heap_frame(self, total_bytes, payer) -> TransactionInstruction:
+    def request_heap_frame(self, total_bytes, payer) -> Instruction:
         instruction_bytes = self.InstructionEnum.build(self.InstructionEnum.enum.RequestHeapFrame(total_bytes))
-        return TransactionInstruction(keys = [AccountMeta(payer, True, False)], program_id=self.program_id, data=instruction_bytes)
+        return Instruction(accounts = [AccountMeta(payer, True, False)], program_id=self.program_id, data=instruction_bytes)
 
-    def set_compute_unit_limit(self, units, payer) -> TransactionInstruction:
+    def set_compute_unit_limit(self, units, payer) -> Instruction:
         instruction_bytes = self.InstructionEnum.build(self.InstructionEnum.enum.SetComputeUnitLimit(units))
-        return TransactionInstruction(keys = [AccountMeta(payer, True, False)], program_id=self.program_id, data=instruction_bytes)
+        return Instruction(accounts = [AccountMeta(payer, True, False)], program_id=self.program_id, data=instruction_bytes)
 
-    def set_compute_unit_price(self, micro_lamports, payer) -> TransactionInstruction:
+    def set_compute_unit_price(self, micro_lamports, payer) -> Instruction:
         instruction_bytes = self.InstructionEnum.build(self.InstructionEnum.enum.SetComputeUnitPrice(micro_lamports))
-        return TransactionInstruction(keys = [AccountMeta(payer, True, False)], program_id=self.program_id, data=instruction_bytes)
+        return Instruction(accounts = [AccountMeta(payer, True, False)], program_id=self.program_id, data=instruction_bytes)
