@@ -20,7 +20,7 @@ def entry():
     pass
 
 
-@click.command(name="mint")
+@click.command(name="mint", help="Mint a new NFT. Options: --keypair/-k, --log_level/-l")
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def mint(keypair, log_level):
@@ -42,7 +42,7 @@ async def mint(keypair, log_level):
 async def config():
     pass
 
-@click.command(name = "set")
+@click.command(name = "set", help = "Set the default config options. Options: --program_id/-p, --url/-u, --keypair/-k")
 @click.option("--program_id", "-p", help = "Enter the program Id of the validator instance transactions will default to")
 @click.option("--url", "-u", help = "Enter the network you want to connect to. Options: mainnet, testnet, devnet, or a custom url.")
 @click.option("--keypair", "-k", help="Enter the path to the keypair that transactions will be signed with by default.")
@@ -86,7 +86,7 @@ def get():
 config.add_command(set)
 config.add_command(get)
 
-@click.command(name="init_rebalance")
+@click.command(name="init_rebalance", help="Initialize the rebalancing process. Options: --keypair/-k, --log_level/-l")
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def initialize_rebalancing(keypair, log_level):
@@ -102,7 +102,7 @@ async def initialize_rebalancing(keypair, log_level):
     print(t_dets)
     await client.close()
 
-@click.command(name="finalize_rebalance")
+@click.command(name="finalize_rebalance", help="Finalize the rebalancing process. Options: --keypair/-k, --log_level/-l")
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def finalize_rebalancing(keypair, log_level):
@@ -118,7 +118,7 @@ async def finalize_rebalancing(keypair, log_level):
     print(t_dets)
     await client.close()
 
-@click.command(name="init")
+@click.command(name="init", help="Initialize the validator instance. Options: --keypair/-k, --log_level/-l")
 @click.option('--validator', '-v', default = get_keypair_path(), help = "Enter the path to the validator id, or the public key of the validator id for this instance")
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
@@ -234,7 +234,7 @@ async def ingl(keypair, validator, log_level):
     await client.close()
 
 
-@click.command(name="process_rewards")
+@click.command(name="process_rewards", help="Process rewards for a vote account, Options: --keypair/-k, --log_level/-l")
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_vote_account_rewards(keypair, log_level):
@@ -250,7 +250,7 @@ async def process_vote_account_rewards(keypair, log_level):
     print(t_dets)
     await client.close()
 
-@click.command(name='create_vote_account')
+@click.command(name='create_vote_account', help="Create the vote account for the validator's program instance, Options: --val_keypair/-k, --log_level/-l")
 @click.option('--val_keypair', default = get_keypair_path(), help="Enter the path to the validator id keypair json file. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_create_vote_account(val_keypair, log_level):
@@ -266,8 +266,8 @@ async def process_create_vote_account(val_keypair, log_level):
     print(t_dets)
     await client.close()
 
-@click.command(name='delegate')
-@click.argument('mint_id', type=str, help="Enter the mint_id of the NFT you want to delegate")
+@click.command(name='delegate', help="Delegate an NFT to a validator, Argument: Mint_ID(Pubkey or Keypair), Options: --keypair/-k, --log_level/-l")
+@click.argument('mint_id', type=str)
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_delegate_gem(keypair, mint_id, log_level):
@@ -288,8 +288,8 @@ async def process_delegate_gem(keypair, mint_id, log_level):
     print(t_dets)
     await client.close()
 
-@click.command(name = 'undelegate')
-@click.argument('mint_id', type=str, help = 'mint_id of the NFT you want to undelegate')
+@click.command(name = 'undelegate', help="Undelegate an NFT from a validator, Argument: Mint_ID(Pubkey or Keypair), Options: --keypair/-k, --log_level/-l")
+@click.argument('mint_id', type=str)
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_undelegate_gem(keypair, mint_id, log_level):
@@ -311,8 +311,8 @@ async def process_undelegate_gem(keypair, mint_id, log_level):
     print(t_dets)
     await client.close()
 
-@click.command(name='init_governance')
-@click.argument('mint_id', type=str, help="The mint_id of the NFT you want to initiate a governance with")
+@click.command(name='init_governance', help="Initialize Governance, Arguments: Mint_Id(Pubkey or Kepair) Options: --keypair/-k, --log_level/-l")
+@click.argument('mint_id', type=str,)
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_create_governance(keypair, mint_id, log_level):
@@ -356,9 +356,9 @@ async def process_create_governance(keypair, mint_id, log_level):
     print(t_dets)
     await client.close()
 
-@click.command(name='vote_governance')
-@click.argument('mint', type=str, help="Enter the mint address of the NFT you want to vote with.")
-@click.argument('numeration', type=int, help="Enter the numeration of the governance you want to vote on.")
+@click.command(name='vote_governance', help="Vote on a Governance Proposal, Arguments: Mint_ID(Pubkey or Keypair), Numeration, Options: --vote/-v, --keypair/-k, --log_level/-l")
+@click.argument('mint', type=str)
+@click.argument('numeration', type=int,)
 @click.option('--vote', '-v', default='D', help="Enter the vote you want to cast. D: For 'Dissapprove', A: For 'Approve', ")
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
@@ -382,8 +382,8 @@ async def process_vote_governance(keypair, mint, numeration, vote, log_level):
     print(t_dets)
     await client.close()
 
-@click.command(name='finalize_governance')
-@click.argument('numeration', type=int, help="Enter the numeration of the governance you want to finalize")
+@click.command(name='finalize_governance', help="Finalize a Governance Proposal, Arguments: Numeration(int), Options: --keypair/-k, --log_level/-l")
+@click.argument('numeration', type=int,)
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_finalize_governance(keypair, numeration, log_level):
@@ -400,8 +400,8 @@ async def process_finalize_governance(keypair, numeration, log_level):
     print(t_dets)
     await client.close()    
 
-@click.command(name='execute_governance')
-@click.argument('numeration', type=int, help="Enter the numeration of the governance you want to execute")
+@click.command(name='execute_governance', help="Execute a Governance Proposal, Arguments: Numeration(int), Options: --keypair/-k, --log_level/-l")
+@click.argument('numeration', type=int,)
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_execute_governance(keypair, numeration, log_level):
@@ -418,7 +418,7 @@ async def process_execute_governance(keypair, numeration, log_level):
     print(t_dets)
     await client.close()    
 
-@click.command(name='upload_uris')
+@click.command(name='upload_uris', help="Upload URIs for the Validator's instange NFTs, Arguments: json_path(path to uris Json file) Options: --keypair/-k, --log_level/-l")
 @click.argument('json_path')
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
@@ -453,7 +453,7 @@ async def process_upload_uris(keypair, json_path, log_level):
         print(f"Transaction Id: [link=https://explorer.solana.com/tx/{str(i)+get_explorer_suffix()}]{str(i)}[/link]")
     await client.close()
 
-@click.command(name='reset_uris')
+@click.command(name='reset_uris', help="Reset URIs for the Validator's instange NFTs, Options: --keypair/-k, --log_level/-l")
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_reset_uris(keypair, log_level):
@@ -469,7 +469,7 @@ async def process_reset_uris(keypair, log_level):
     print(t_dets)
     await client.close()
 
-@click.command(name='init_registry')
+@click.command(name='init_registry', help="Initialize the Governance Registry Program, Options: --keypair/-k")
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 async def process_initialize_registry(keypair):
     client = AsyncClient(rpc_url.target_network)
@@ -484,7 +484,7 @@ async def process_initialize_registry(keypair):
     print(t_dets)
     await client.close()
 
-@click.command(name="get_vote_pubkey")
+@click.command(name="get_vote_pubkey", help="Get the Vote Account Pubkey for the Validator's instance, Options: --program_id/-p")
 @click.option('--program_id', '-p', default = get_program_id(), help="Enter the program_id of the validator instance you want to get the vote account pubkey for. Defaults to the set config program_id")
 async def process_get_vote_key(program_id):
     try:
