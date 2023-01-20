@@ -7,7 +7,7 @@ Fractionalizing Validator Creation and Ownership</h3>
 
 ## 
 
-# CLI for interacting with Ingl Programs (Linux only Recommended)
+# CLI for interacting with Ingl Programs (Ubuntu 20.04 only is Recommended)
 ## Installation
 ### Isolating an environment to prevent current or future environmental conflicts:
 ```

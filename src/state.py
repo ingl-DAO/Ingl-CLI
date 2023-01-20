@@ -170,17 +170,13 @@ def parse_pubkey_input(str_input: str) -> PubkeyInput:
             pubkey = PubkeyInput(pubkey=Pubkey.from_string(str_input))
             return pubkey
         except Exception as e:
-            if 'invalid public key input:' in str(e):
-                try:
-                    t_keypair = keypair_from_json(str_input)
-                    return PubkeyInput(t_keypair=t_keypair)
-                except Exception as new_e:
-                    print("invalid public key input")
-                    raise new_e
-            else:
+            try:
+                t_keypair = keypair_from_json(str_input)
+                return PubkeyInput(t_keypair=t_keypair)
+            except Exception as new_e:
                 print("invalid public key input")
-                raise e
-
+                raise new_e
+            
 async def sign_and_send_tx(tx: Transaction, client: AsyncClient, *args) -> SendTransactionResp:
     last_valid_block_height = None
     if client.blockhash_cache:
@@ -288,5 +284,5 @@ def set_keypair_path(keypair_path: str) -> bool:
         return False
     set_config('keypair_path', keypair_path)
     print("Keypair path set to: ", path)
-    print("Keypair Public Key: ", keypair.pubkey)
+    print("Keypair Public Key: ", keypair.pubkey())
     return True
