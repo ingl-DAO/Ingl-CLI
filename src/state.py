@@ -282,7 +282,7 @@ def set_keypair_path(keypair_path: str) -> bool:
     except:
         print("Invalid keypair path")
         return False
-    set_config('keypair_path', keypair_path)
+    set_config('keypair_path', path)
     print("Keypair path set to: ", path)
     print("Keypair Public Key: ", keypair.pubkey())
     return True
