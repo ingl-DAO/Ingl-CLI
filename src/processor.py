@@ -28,7 +28,7 @@ async def ingl_init(payer_keypair: KeypairInput, validator_pubkey: PubkeyInput, 
     registry_config_data = RegistryConfig.parse(registry_config_account.value.data)
     storage_numeration = registry_config_data.validator_numeration // 625
     storage_key, _storage_bump = Pubkey.find_program_address([b'storage', storage_numeration.to_bytes(4, "big")], ingl_constants.REGISTRY_PROGRAM_ID)
-    print(registry_config_data)
+    # print(registry_config_data)
 
     payer_account_meta = AccountMeta(payer_keypair.pubkey, True, True)
     collection_holder_meta = AccountMeta(collection_holder_pubkey, False, True)
@@ -85,7 +85,8 @@ async def ingl_init(payer_keypair: KeypairInput, validator_pubkey: PubkeyInput, 
     # print(accounts)
     data = build_instruction(InstructionEnum.enum.Init(init_commission = init_commission, max_primary_stake = max_primary_stake, nft_holders_share = nft_holders_share, initial_redemption_fee = initial_redemption_fee, is_validator_id_switchable = is_validator_id_switchable, unit_backing = unit_backing, redemption_fee_duration = redemption_fee_duration, proposal_quorum = proposal_quorum, creator_royalties = creator_royalties, governance_expiration_time = governance_expiration_time, rarities = rarities, rarity_names = rarity_names, twitter_handle = twitter_handle, discord_invite = discord_invite, validator_name = validator_name, collection_uri = collection_uri, website = website, default_uri = default_uri, log_level = log_level))
     transaction = Transaction()
-    transaction.add(ComputeBudgetInstruction().set_compute_unit_limit(250_000, payer_keypair.pubkey))
+    # print(data)
+    transaction.add(ComputeBudgetInstruction().set_compute_unit_limit(300_000, payer_keypair.pubkey))
     transaction.add(Instruction(accounts = accounts, program_id = get_program_id(), data = data))
    
 
