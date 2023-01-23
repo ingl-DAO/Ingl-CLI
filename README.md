@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="" rel="noopener">
+  <a href="" rel="https://www.ingl.io">
  <img src="images/logo.png" alt="Project logo"></a>
 </p>
 <h3 align="center">

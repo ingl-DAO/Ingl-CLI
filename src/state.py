@@ -122,7 +122,7 @@ def get_network_url(network: str) -> str:
         raise Exception("Invalid network")
 
 
-def keypair_from_json(filepath):
+def keypair_from_json(filepath) -> Keypair:
     keypair = Keypair.from_bytes(json.load(open(filepath)))
     return keypair
 
