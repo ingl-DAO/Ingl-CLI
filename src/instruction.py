@@ -31,7 +31,7 @@ InstructionEnum = Enum(
     "ImprintRarity" / CStruct("log_level" / U8),
     "Init" / InitStruct,
     "Redeem" / CStruct("log_level"/U8),
-    "NFTWithdraw" / CStruct("cnt" / U32, "log_level"/U8),
+    "NFTWithdraw" / CStruct("cnt" / U8, "log_level"/U8),
     "ProcessRewards" / CStruct("log_level"/U8),
     "InitRebalance" / CStruct("log_level"/U8),
     "FinalizeRebalance" / CStruct("log_level"/U8),
@@ -44,6 +44,7 @@ InstructionEnum = Enum(
     "VoteGovernance" / CStruct("numeration" / U32, "vote"/Bool, "cnt"/U8, "log_level"/U8),
     "FinalizeGovernance" / CStruct("numeration"/U32, "log_level"/U8),
     "ExecuteGovernance" / CStruct("numeration"/U32, "log_level"/U8),
+    "InjectTestingData" / CStruct("num_mints"/U8, "log_level"/U8),
     
     enum_name = "InstructionEnum",
 )
@@ -78,6 +79,7 @@ RegistryEnum = Enum(
     "InitConfig",
     "AddProgram",
     "RemovePrograms" / CStruct("program_count" / U8 ),
+    "Reset",
     "Blank",
 
  enum_name="RegistryEnum",

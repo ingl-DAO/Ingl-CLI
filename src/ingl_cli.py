@@ -484,6 +484,43 @@ async def process_initialize_registry(keypair):
     print(t_dets)
     await client.close()
 
+@click.command(name="reset_registry", help="Reset the Governance Registry Program, Options: --keypair/-k")
+@click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
+async def process_reset_registry(keypair):
+    client = AsyncClient(rpc_url.target_network)
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        payer_keypair = parse_keypair_input(keypair)
+    except Exception as e:
+        print("Invalid Keypair Input, ", e)
+        return
+    t_dets = await reset_registry(payer_keypair, client)
+    print(t_dets)
+    await client.close()
+
+@click.command(name="register_program", help="Register a Program with the Governance Registry, Options: --keypair/-k, --program_id/-p")
+@click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
+@click.option('--program_id', '-p', default = get_program_id(), help="Enter the program_id of the validator instance you want to register. Defaults to the set config program_id")
+async def process_register_program(keypair, program_id):
+    client = AsyncClient(rpc_url.target_network)
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        payer_keypair = parse_keypair_input(keypair)
+    except Exception as e:
+        print("Invalid Keypair Input, ", e)
+        return
+    try:
+        program_pubkey = parse_pubkey_input(program_id)
+    except Exception as e:
+        print("Invalid Pubkey Input, ", e)
+        return
+    t_dets = await register_program(payer_keypair, program_pubkey.pubkey, client)
+    print(t_dets)
+    await client.close()
+
+
 @click.command(name="get_vote_pubkey", help="Get the Vote Account Pubkey for the Validator's instance, Options: --program_id/-p")
 @click.option('--program_id', '-p', default = get_program_id(), help="Enter the program_id of the validator instance you want to get the vote account pubkey for. Defaults to the set config program_id")
 async def process_get_vote_key(program_id):
@@ -497,6 +534,33 @@ async def process_get_vote_key(program_id):
     print("Vote Account Key: ", expected_vote_pubkey)
     print("Vote Account Bump: ", expected_vote_bump)
     return
+
+@click.command(name ="inject_test")
+@click.argument("num_mints", type=int)
+@click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
+@click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
+async def process_inject_test(keypair, num_mints, log_level):
+    client = AsyncClient(rpc_url.target_network)
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        payer_keypair = parse_keypair_input(keypair)
+    except Exception as e:
+        print("Invalid Keypair Input, ", e)
+        return
+
+    mints = []
+    for i in range(num_mints):
+        while True:
+            try:
+                mints.append(parse_pubkey_input(click.prompt(f"Enter the Mint Address for Mint {i+1}", type=str)).pubkey)
+                break
+            except Exception as e:
+                print("Invalid Mint Address, ", e)
+
+    t_dets = await inject_testing_data(payer_keypair, mints, client, log_level= log_level)
+    print(t_dets)
+    await client.close()
 
 entry.add_command(mint)
 entry.add_command(initialize_rebalancing)
@@ -515,5 +579,9 @@ entry.add_command(process_upload_uris)
 entry.add_command(process_reset_uris)
 entry.add_command(process_initialize_registry)
 entry.add_command(process_get_vote_key)
+entry.add_command(process_inject_test)
+entry.add_command(process_reset_registry)
+entry.add_command(process_register_program)
 if __name__ == '__main__':
+    
     entry()

@@ -73,13 +73,9 @@ async def ingl_init(payer_keypair: KeypairInput, validator_pubkey: PubkeyInput, 
         storage_account_meta,
 
         system_program_meta, 
-        spl_program_meta,
-        associated_program_meta,
         associated_program_meta,
         spl_program_meta, 
         metadata_program_id,
-        metadata_program_id,
-        system_program_meta,
         registry_program_meta,
     ]
     # print(accounts)
@@ -881,10 +877,117 @@ async def init_registry(payer_keypair: KeypairInput, client: AsyncClient,) -> st
     try:
         instruction_data = RegistryEnum.build(RegistryEnum.enum.InitConfig())
         transaction = Transaction()
-        transaction.add(Instruction(accounts, ingl_constants.REGISTRY_PROGRAM_ID, instruction_data))
+        transaction.add(Instruction(accounts = accounts, program_id = ingl_constants.REGISTRY_PROGRAM_ID, data = instruction_data))
         t_dets = await client.send_transaction(transaction, payer_keypair.keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
         return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
     except Exception as e:
         print(t_dets, e)
         raise e
+
+async def reset_registry(payer_keypair: KeypairInput, client: AsyncClient,) -> str:
+    config_account_key, _config_bump = Pubkey.find_program_address([b'config'], ingl_constants.REGISTRY_PROGRAM_ID)
+
+    payer_account_meta = AccountMeta(pubkey = payer_keypair.pubkey, is_signer = True, is_writable = True)
+    config_account_meta = AccountMeta(pubkey = config_account_key, is_signer = False, is_writable = True)
+    system_program_meta = AccountMeta(pubkey = system_program.ID, is_signer = False, is_writable = False)
+    t_struct = CStruct(
+        "validation_phrase" / U32,
+        "validator_numeration" / U32,
+    )
+    config_data = await client.get_account_info(config_account_key)
+    config_data = t_struct.parse(config_data.value.data)
+    storage_account_key, _config_account_bump = Pubkey.find_program_address([b'storage', (config_data.validator_numeration // 625).to_bytes(4, 'big')], ingl_constants.REGISTRY_PROGRAM_ID)
+    storage_account_meta = AccountMeta(pubkey = storage_account_key, is_signer = False, is_writable = True)
+
+
+    accounts = [
+        payer_account_meta,
+        config_account_meta,
+        storage_account_meta,
+
+        system_program_meta,
+    ]
+
+    t_dets = None
+    try:
+        instruction_data = RegistryEnum.build(RegistryEnum.enum.Reset())
+        transaction = Transaction()
+        transaction.add(Instruction(accounts = accounts, program_id = ingl_constants.REGISTRY_PROGRAM_ID, data = instruction_data))
+        t_dets = await client.send_transaction(transaction, payer_keypair.keypair)
+        await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+    except Exception as e:
+        print(t_dets, e)
+        raise e
+
+async def register_program(payer_keypair: KeypairInput, program_key: Pubkey, client: AsyncClient,) -> str:
+    config_account_key, _config_bump = Pubkey.find_program_address([b'config'], ingl_constants.REGISTRY_PROGRAM_ID)
+    payer_account_meta = AccountMeta(pubkey = payer_keypair.pubkey, is_signer = True, is_writable = True)
+    config_account_meta = AccountMeta(pubkey = config_account_key, is_signer = False, is_writable = True)
+    registered_program_meta = AccountMeta(pubkey = program_key, is_signer = False, is_writable = False)
+    team_account_meta = AccountMeta(pubkey = ingl_constants.TEAM_ACCOUNT_KEY, is_signer = False, is_writable = True)
+    system_program_meta = AccountMeta(pubkey = system_program.ID, is_signer = False, is_writable = False)
+    
+    config_data = await client.get_account_info(config_account_key)
+    config_data = RegistryConfig.parse(config_data.value.data)
+    storage_account_key, _config_account_bump = Pubkey.find_program_address([b'storage', (config_data.validator_numeration // 625).to_bytes(4, 'big')], ingl_constants.REGISTRY_PROGRAM_ID)
+    storage_account_meta = AccountMeta(pubkey = storage_account_key, is_signer = False, is_writable = True)
+
+    accounts = [
+        payer_account_meta,
+        config_account_meta,
+        registered_program_meta,
+        team_account_meta,
+        storage_account_meta,
+
+        system_program_meta,
+    ]
+
+    t_dets = None
+    try:
+        instruction_data = RegistryEnum.build(RegistryEnum.enum.AddProgram())
+        transaction = Transaction()
+        transaction.add(Instruction(accounts = accounts, program_id = ingl_constants.REGISTRY_PROGRAM_ID, data = instruction_data))
+        t_dets = await client.send_transaction(transaction, payer_keypair.keypair)
+        await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+    except Exception as e:
+        print(t_dets, e)
+        raise e
+
+async def inject_testing_data(payer_keypair: KeypairInput, mints: List[Pubkey], client: AsyncClient, log_level: int = 0) -> str:
+    authorized_withdrawer_key, _authorized_withdrawer_bump = Pubkey.find_program_address([bytes(ingl_constants.AUTHORIZED_WITHDRAWER_KEY, 'UTF-8')], get_program_id())
+    general_account_key, _general_account_bump = Pubkey.find_program_address([bytes(ingl_constants.GENERAL_ACCOUNT_SEED, 'UTF-8')], get_program_id())
+
+    payer_account_meta = AccountMeta(payer_keypair.pubkey, True, True)
+    general_account_meta = AccountMeta(general_account_key, False, True)
+    sys_program_meta = AccountMeta(system_program.ID, False, False)
+    authorized_withdrawer_meta = AccountMeta(authorized_withdrawer_key, False, True)
+
+    accounts = [
+        payer_account_meta,
+        general_account_meta,
+        authorized_withdrawer_meta,
+
+    ]
+
+    for mint_pubkey in mints:
+        accounts.append(AccountMeta(mint_pubkey, False, False))
+        nft_account_pubkey, _nft_account_bump = Pubkey.find_program_address([bytes(ingl_constants.NFT_ACCOUNT_CONST, 'UTF-8'), bytes(mint_pubkey)], get_program_id())
+        accounts.append(AccountMeta(nft_account_pubkey, False, True))
+
+
+
+
+    accounts.append(sys_program_meta)
+    # print(accounts)
+    data = InstructionEnum.build(InstructionEnum.enum.InjectTestingData(log_level = log_level, num_mints = len(mints)))
+    transaction = Transaction()
+    transaction.add(Instruction(accounts = accounts, program_id = get_program_id(), data = data))
+    try:
+        t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
+        await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+    except Exception as e:
+        return(f"[warning]Error: {e}[/warning]")
