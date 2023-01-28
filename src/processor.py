@@ -259,6 +259,7 @@ async def create_vote_account(validator_keypair: KeypairInput, client: AsyncClie
     expected_stake_key, _expected_stake_bump = Pubkey.find_program_address([bytes(ingl_constants.STAKE_ACCOUNT_KEY, 'UTF-8')], get_program_id())
     config_account_pubkey, _config_account_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_CONFIG_SEED, 'UTF-8')], get_program_id())
     general_account_pubkey, _general_account_bump = Pubkey.find_program_address([bytes(ingl_constants.GENERAL_ACCOUNT_SEED, 'UTF-8')], get_program_id())
+    pd_pool_account_pubkey, _pd_pool_account_bump = Pubkey.find_program_address([bytes(ingl_constants.PD_POOL_ACCOUNT_KEY, 'UTF-8')], get_program_id())
 
     
     print(f"Vote_Account: {expected_vote_pubkey}")
@@ -274,6 +275,10 @@ async def create_vote_account(validator_keypair: KeypairInput, client: AsyncClie
     stake_program_meta = AccountMeta(ingl_constants.STAKE_PROGRAM_ID, False, False)
     config_account_meta = AccountMeta(config_account_pubkey, False, True)
     general_account_meta = AccountMeta(general_account_pubkey, False, True)
+    pd_pool_account_meta = AccountMeta(pd_pool_account_pubkey, False, False)
+    stake_history_meta = AccountMeta(STAKE_HISTORY, False, False)
+    stake_config_meta = AccountMeta(ingl_constants.STAKE_CONFIG_PROGRAM_ID, False, False)
+
 
     accounts = [
         validator_meta,
@@ -284,6 +289,9 @@ async def create_vote_account(validator_keypair: KeypairInput, client: AsyncClie
         stake_account_meta,
         config_account_meta,
         general_account_meta,
+        pd_pool_account_meta,
+        stake_history_meta,
+        stake_config_meta,
         
         sys_program_meta,
         vote_program_meta,
@@ -308,16 +316,12 @@ async def init_rebalance(payer_keypair: KeypairInput, client: AsyncClient, log_l
     t_withdraw_key, _t_withdraw_bump = Pubkey.find_program_address([bytes(ingl_constants.T_WITHDRAW_KEY, 'UTF-8')], get_program_id())
     pd_pool_pubkey, _pd_pool_bump = Pubkey.find_program_address([bytes(ingl_constants.PD_POOL_ACCOUNT_KEY, 'UTF-8')], get_program_id())
     general_account_pubkey, _general_account_bump = Pubkey.find_program_address([bytes(ingl_constants.GENERAL_ACCOUNT_SEED, 'UTF-8')], get_program_id())
-    config_account_pubkey, _config_account_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_CONFIG_SEED, 'UTF-8')], get_program_id())
+    expected_vote_pubkey, _expected_vote_pubkey_nonce = Pubkey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, "UTF-8")], get_program_id())
 
-    data = await client.get_account_info(config_account_pubkey)
-    validator_id = Pubkey(ValidatorConfig.parse(data.value.data).validator_id)
-    print(f"Validator_Id: {validator_id}")
 
     payer_account_meta = AccountMeta(payer_keypair.pubkey, True, True)
     rent_account_meta = AccountMeta(solders.sysvar.RENT, False, False)
     sysvar_clock_meta = AccountMeta(solders.sysvar.CLOCK, False, False)
-    validator_meta = AccountMeta(validator_id, True, True)
     sys_program_meta = AccountMeta(system_program.ID, False, False)
     general_account_meta = AccountMeta(general_account_pubkey, False, True)
     stake_account_meta = AccountMeta(expected_stake_key, False, True)
@@ -325,12 +329,13 @@ async def init_rebalance(payer_keypair: KeypairInput, client: AsyncClient, log_l
     t_withdraw_meta = AccountMeta(t_withdraw_key, False, True)
     pd_pool_meta = AccountMeta(pd_pool_pubkey, False, True)
     stake_program_meta = AccountMeta(ingl_constants.STAKE_PROGRAM_ID, False, False)
-    config_account_meta = AccountMeta(config_account_pubkey, False, False)
+    vote_account_meta = AccountMeta(expected_vote_pubkey, False, True)
+    stake_history_meta = AccountMeta(STAKE_HISTORY, False, False)
+    stake_config_meta = AccountMeta(ingl_constants.STAKE_CONFIG_PROGRAM_ID, False, False)
 
 
     accounts = [
         payer_account_meta,
-        validator_meta,
         t_stake_meta,
         pd_pool_meta,
         general_account_meta,
@@ -338,7 +343,9 @@ async def init_rebalance(payer_keypair: KeypairInput, client: AsyncClient, log_l
         rent_account_meta,
         stake_account_meta,
         t_withdraw_meta,
-        config_account_meta,
+        vote_account_meta,
+        stake_history_meta,
+        stake_config_meta,
 
         sys_program_meta,
         stake_program_meta,
@@ -372,7 +379,7 @@ async def finalize_rebalance(payer_keypair: KeypairInput, client: AsyncClient, l
 
     payer_account_meta = AccountMeta(payer_keypair.pubkey, True, True)
     sysvar_clock_meta = AccountMeta(solders.sysvar.CLOCK, False, False)
-    validator_meta = AccountMeta(validator_id, True, True)
+    validator_meta = AccountMeta(validator_id, False, True)
     stake_account_meta = AccountMeta(expected_stake_key, False, True)
     t_stake_meta = AccountMeta(t_stake_key, False, True)
     t_withdraw_meta = AccountMeta(t_withdraw_key, False, True)
