@@ -101,12 +101,15 @@ class rpc_url:
     DEVNET = "https://api.devnet.solana.com"
     TESTNET = "https://api.testnet.solana.com"
     MAINNET = "https://api.mainnet.solana.com"
+    
     target_network = DEVNET
     
-def get_explorer_suffix():
-    if rpc_url.target_network == rpc_url.DEVNET:
+def get_explorer_suffix(cluster_url: str):
+    if "net.solana.com" not in cluster_url:
+        return "?cluster=custom&customUrl=" + cluster_url
+    if cluster_url == rpc_url.DEVNET:
         return "?cluster=devnet"
-    elif rpc_url.target_network == rpc_url.TESTNET:
+    elif cluster_url == rpc_url.TESTNET:
         return "?cluster=testnet"
     else:
         return ""

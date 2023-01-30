@@ -89,7 +89,7 @@ async def ingl_init(payer_keypair: KeypairInput, validator_pubkey: PubkeyInput, 
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -167,7 +167,7 @@ async def mint_nft(payer_keypair: KeypairInput, mint_keypair: KeypairInput, clie
     try: 
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair, mint_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -205,7 +205,7 @@ async def delegate_nft(payer_keypair: KeypairInput, mint_pubkey: PubkeyInput, cl
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -250,7 +250,7 @@ async def undelegate_nft(payer_keypair: KeypairInput, mint_pubkey: PubkeyInput, 
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -306,7 +306,7 @@ async def create_vote_account(validator_keypair: KeypairInput, client: AsyncClie
     try: 
         t_dets = await sign_and_send_tx(transaction, client, validator_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -361,7 +361,7 @@ async def init_rebalance(payer_keypair: KeypairInput, client: AsyncClient, log_l
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -412,7 +412,7 @@ async def finalize_rebalance(payer_keypair: KeypairInput, client: AsyncClient, l
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -461,7 +461,7 @@ async def process_rewards(payer_keypair: KeypairInput, client: AsyncClient, log_
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -504,7 +504,7 @@ async def nft_withdraw(payer_keypair: KeypairInput, mints: List[Pubkey], client:
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -542,7 +542,7 @@ async def inject_testing_data(payer_keypair: KeypairInput, mints: List[Pubkey], 
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -603,7 +603,7 @@ async def init_governance(payer_keypair: KeypairInput, mint: PubkeyInput, client
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -643,7 +643,7 @@ async def vote_governance(payer_keypair: KeypairInput, vote: Bool, proposal_nume
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -677,7 +677,7 @@ async def finalize_governance(payer_keypair: KeypairInput, proposal_numeration: 
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -771,7 +771,7 @@ async def execute_governance(payer_keypair: KeypairInput, proposal_numeration: i
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -800,7 +800,7 @@ async def reset_uris(payer_keypair: KeypairInput, client: AsyncClient, log_level
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"Error: {e}")
 
@@ -860,7 +860,7 @@ async def reset_uris(payer_keypair: KeypairInput, client: AsyncClient, log_level
         transaction.add(Instruction(accounts = accounts, program_id = get_program_id(), data = instruction_data))
         t_dets = await client.send_transaction(transaction, payer_keypair.keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         print(t_dets, e)
         raise e
@@ -887,7 +887,7 @@ async def init_registry(payer_keypair: KeypairInput, client: AsyncClient,) -> st
         transaction.add(Instruction(accounts = accounts, program_id = ingl_constants.REGISTRY_PROGRAM_ID, data = instruction_data))
         t_dets = await client.send_transaction(transaction, payer_keypair.keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         print(t_dets, e)
         raise e
@@ -923,7 +923,7 @@ async def reset_registry(payer_keypair: KeypairInput, client: AsyncClient,) -> s
         transaction.add(Instruction(accounts = accounts, program_id = ingl_constants.REGISTRY_PROGRAM_ID, data = instruction_data))
         t_dets = await client.send_transaction(transaction, payer_keypair.keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         print(t_dets, e)
         raise e
@@ -958,7 +958,7 @@ async def register_program(payer_keypair: KeypairInput, program_key: Pubkey, cli
         transaction.add(Instruction(accounts = accounts, program_id = ingl_constants.REGISTRY_PROGRAM_ID, data = instruction_data))
         t_dets = await client.send_transaction(transaction, payer_keypair.keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         print(t_dets, e)
         raise e
@@ -995,6 +995,6 @@ async def inject_testing_data(payer_keypair: KeypairInput, mints: List[Pubkey], 
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix()}]{str(t_dets.value)}[/link]"
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:
         return(f"[warning]Error: {e}[/warning]")
