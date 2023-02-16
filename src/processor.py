@@ -215,7 +215,9 @@ async def undelegate_nft(payer_keypair: KeypairInput, mint_pubkey: PubkeyInput, 
     authorized_withdrawer_key, _authorized_withdrawer_bump = Pubkey.find_program_address([bytes(ingl_constants.AUTHORIZED_WITHDRAWER_KEY, 'UTF-8') ], get_program_id())
     config_account_pubkey, _config_account_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_CONFIG_SEED, 'UTF-8')], get_program_id())
     general_account_pubkey, _general_account_bump = Pubkey.find_program_address([bytes(ingl_constants.GENERAL_ACCOUNT_SEED, 'UTF-8')], get_program_id())
-    expected_vote_pubkey, _expected_vote_bump = Pubkey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, 'UTF-8')], get_program_id())
+    
+    config_data = ValidatorConfig.parse((await client.get_account_info(config_account_pubkey)).value.data)
+    expected_vote_pubkey = Pubkey(config_data.vote_account)
     
 
     payer_account_meta = AccountMeta(payer_keypair.pubkey, True, True)
@@ -316,7 +318,10 @@ async def init_rebalance(payer_keypair: KeypairInput, client: AsyncClient, log_l
     t_withdraw_key, _t_withdraw_bump = Pubkey.find_program_address([bytes(ingl_constants.T_WITHDRAW_KEY, 'UTF-8')], get_program_id())
     pd_pool_pubkey, _pd_pool_bump = Pubkey.find_program_address([bytes(ingl_constants.PD_POOL_ACCOUNT_KEY, 'UTF-8')], get_program_id())
     general_account_pubkey, _general_account_bump = Pubkey.find_program_address([bytes(ingl_constants.GENERAL_ACCOUNT_SEED, 'UTF-8')], get_program_id())
-    expected_vote_pubkey, _expected_vote_pubkey_nonce = Pubkey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, "UTF-8")], get_program_id())
+    config_account_pubkey, _config_account_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_CONFIG_SEED, 'UTF-8')], get_program_id())
+
+    config_data = ValidatorConfig.parse((await client.get_account_info(config_account_pubkey)).value.data)
+    expected_vote_pubkey = Pubkey(config_data.vote_account)
 
 
     payer_account_meta = AccountMeta(payer_keypair.pubkey, True, True)
@@ -332,6 +337,7 @@ async def init_rebalance(payer_keypair: KeypairInput, client: AsyncClient, log_l
     vote_account_meta = AccountMeta(expected_vote_pubkey, False, True)
     stake_history_meta = AccountMeta(STAKE_HISTORY, False, False)
     stake_config_meta = AccountMeta(ingl_constants.STAKE_CONFIG_PROGRAM_ID, False, False)
+    config_account_meta = AccountMeta(config_account_pubkey, False, False)
 
 
     accounts = [
@@ -346,6 +352,7 @@ async def init_rebalance(payer_keypair: KeypairInput, client: AsyncClient, log_l
         vote_account_meta,
         stake_history_meta,
         stake_config_meta,
+        config_account_meta,
 
         sys_program_meta,
         stake_program_meta,
@@ -388,6 +395,7 @@ async def finalize_rebalance(payer_keypair: KeypairInput, client: AsyncClient, l
     sysvar_stake_history_meta = AccountMeta(solders.sysvar.STAKE_HISTORY, False, False)
     general_account_meta = AccountMeta(general_account_pubkey, False, True)
     config_account_meta = AccountMeta(config_account_pubkey, False, False)
+    system_program_meta = AccountMeta(solders.system_program.ID, False, False)
 
     accounts = [
         payer_account_meta,
@@ -402,8 +410,7 @@ async def finalize_rebalance(payer_keypair: KeypairInput, client: AsyncClient, l
         config_account_meta,
         
         stake_program_meta,
-        stake_program_meta,
-        stake_program_meta,
+        system_program_meta,
     ]
 
     data = InstructionEnum.build(InstructionEnum.enum.FinalizeRebalance(log_level = log_level, ))
@@ -420,11 +427,11 @@ async def process_rewards(payer_keypair: KeypairInput, client: AsyncClient, log_
     ingl_team_account_pubkey = Pubkey.from_string("Team111111111111111111111111111111111111111")
     config_account_pubkey, _config_account_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_CONFIG_SEED, 'UTF-8')], get_program_id())
     authorized_withdrawer_key, _authorized_withdrawer_bump = Pubkey.find_program_address([bytes(ingl_constants.AUTHORIZED_WITHDRAWER_KEY, 'UTF-8') ], get_program_id())
-    vote_account_key, _vote_account_bump = Pubkey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, 'UTF-8')], get_program_id())
     general_account_pubkey, _general_account_bump = Pubkey.find_program_address([bytes(ingl_constants.GENERAL_ACCOUNT_SEED, 'UTF-8')], get_program_id())
 
-    data = await client.get_account_info(config_account_pubkey)
-    validator_id = Pubkey(ValidatorConfig.parse(data.value.data).validator_id)
+    config_data = ValidatorConfig.parse((await client.get_account_info(config_account_pubkey)).value.data)
+    vote_account_key = Pubkey(config_data.vote_account)
+    validator_id = Pubkey(config_data.validator_id)
     print(f"Validator_Id: {validator_id}")
 
 
@@ -455,9 +462,9 @@ async def process_rewards(payer_keypair: KeypairInput, client: AsyncClient, log_
         sys_program_meta,
     ]
     # print(accounts)
-    data = InstructionEnum.build(InstructionEnum.enum.ProcessRewards(log_level = log_level, ))
+    config_data = InstructionEnum.build(InstructionEnum.enum.ProcessRewards(log_level = log_level, ))
     transaction = Transaction()
-    transaction.add(Instruction(accounts = accounts, program_id = get_program_id(), data = data))
+    transaction.add(Instruction(accounts = accounts, program_id = get_program_id(), data = config_data))
     try:
         t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
@@ -467,9 +474,11 @@ async def process_rewards(payer_keypair: KeypairInput, client: AsyncClient, log_
 
 async def nft_withdraw(payer_keypair: KeypairInput, mints: List[Pubkey], client: AsyncClient, log_level: int = 0) -> str:
     authorized_withdrawer_key, _authorized_withdrawer_bump = Pubkey.find_program_address([bytes(ingl_constants.AUTHORIZED_WITHDRAWER_KEY, 'UTF-8'), bytes(vote_account_id.pubkey) ], get_program_id())
-    vote_account_id, _vote_account_bump = Pubkey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, 'UTF-8')], get_program_id())
     general_account_pubkey, _general_account_bump = Pubkey.find_program_address([bytes(ingl_constants.GENERAL_ACCOUNT_SEED, 'UTF-8')], get_program_id())
+    config_account_pubkey, _config_account_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_CONFIG_SEED, 'UTF-8')], get_program_id())
 
+    config_data = ValidatorConfig.parse((await client.get_account_info(config_account_pubkey)).value.data)
+    vote_account_id = Pubkey(config_data.vote_account)
 
     payer_account_meta = AccountMeta(payer_keypair.pubkey, True, True)
     vote_account_meta = AccountMeta(vote_account_id, False, True)
@@ -512,6 +521,8 @@ async def inject_testing_data(payer_keypair: KeypairInput, mints: List[Pubkey], 
     expected_vote_data_pubkey, _expected_vote_data_bump = Pubkey.find_program_address([bytes(ingl_constants.VOTE_DATA_ACCOUNT_KEY, 'UTF-8'), bytes(vote_account_id.pubkey)], get_program_id())
     authorized_withdrawer_key, _authorized_withdrawer_bump = Pubkey.find_program_address([bytes(ingl_constants.AUTHORIZED_WITHDRAWER_KEY, 'UTF-8'), bytes(vote_account_id.pubkey) ], get_program_id())
 
+
+
     payer_account_meta = AccountMeta(payer_keypair.pubkey, True, True)
     vote_account_meta = AccountMeta(vote_account_id.pubkey, False, True)
     sys_program_meta = AccountMeta(system_program.ID, False, False)
@@ -547,7 +558,6 @@ async def inject_testing_data(payer_keypair: KeypairInput, mints: List[Pubkey], 
         return(f"Error: {e}")
 
 async def init_governance(payer_keypair: KeypairInput, mint: PubkeyInput, client: AsyncClient, title: str, description: str, governance_type: Optional[GovernanceType.enum] = None, config_account_type:Optional[ConfigAccountType.enum] = None, vote_account_governance: Optional[VoteAccountGovernance.enum] = None,  log_level: int = 0) -> str:
-    vote_account_pubkey, _vote_account_bump = Pubkey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, 'UTF-8')], get_program_id())
     general_account_pubkey, _general_account_bump = Pubkey.find_program_address([bytes(ingl_constants.GENERAL_ACCOUNT_SEED, 'UTF-8')], get_program_id())
     config_account_pubkey, _config_account_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_CONFIG_SEED, 'UTF-8')], get_program_id())
     nft_account_data_pubkey, _nft_account_data_bump = Pubkey.find_program_address([bytes(ingl_constants.NFT_ACCOUNT_CONST, 'UTF-8'), bytes(mint.pubkey)], get_program_id())
@@ -556,11 +566,14 @@ async def init_governance(payer_keypair: KeypairInput, mint: PubkeyInput, client
     data = await client.get_account_info(general_account_pubkey)
     proposal_numeration = GeneralData.parse(data.value.data).proposal_numeration
     print(f"proposal_numeration: {proposal_numeration}")
+
+    config_data = ValidatorConfig.parse((await client.get_account_info(config_account_pubkey)).value.data)
+    vote_account_key = Pubkey(config_data.vote_account)
     
     proposal_pubkey, _proposal_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_PROPOSAL_KEY, 'UTF-8'), (proposal_numeration).to_bytes(4, "big")], get_program_id())
 
     payer_account_meta = AccountMeta(pubkey = payer_keypair.pubkey, is_signer = True, is_writable = True)
-    vote_account_meta = AccountMeta(pubkey = vote_account_pubkey, is_signer = False, is_writable = True)
+    vote_account_meta = AccountMeta(pubkey = vote_account_key, is_signer = False, is_writable = True)
     proposal_account_meta = AccountMeta(pubkey = proposal_pubkey, is_signer = False, is_writable = True)
     general_account_meta = AccountMeta(pubkey = general_account_pubkey, is_signer = False, is_writable = True)
     mint_account_meta = AccountMeta(pubkey = mint.pubkey, is_signer = False, is_writable = False)

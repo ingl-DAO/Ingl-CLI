@@ -64,6 +64,7 @@ ValidatorConfig = CStruct(
     "creator_royalties" / U16,
     "commission" / U8,
     "validator_id" / U8[32],
+    "vote_account" / U8[32],
     "governance_expiration_time" / U32,
     "default_uri" / String,
     "validator_name" / String,

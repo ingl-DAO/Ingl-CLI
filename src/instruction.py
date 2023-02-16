@@ -45,6 +45,7 @@ InstructionEnum = Enum(
     "FinalizeGovernance" / CStruct("numeration"/U32, "log_level"/U8),
     "ExecuteGovernance" / CStruct("numeration"/U32, "log_level"/U8),
     "InjectTestingData" / CStruct("num_mints"/U8, "log_level"/U8),
+    "FractionalizeExisting" / InitStruct,
     
     enum_name = "InstructionEnum",
 )
