@@ -1020,9 +1020,9 @@ async def fractionalize_existing(payer_keypair: KeypairInput, authorized_withdra
     team_account_meta = AccountMeta(ingl_constants.TEAM_ACCOUNT_KEY, False, True)
     storage_account_meta = AccountMeta(storage_key, False, True)
     registry_program_meta = AccountMeta(ingl_constants.REGISTRY_PROGRAM_ID, False, False)
-    current_authorized_withdrawer_meta = AccountMeta(authorized_withdrawer.pubkey, False, False)
+    current_authorized_withdrawer_meta = AccountMeta(authorized_withdrawer.pubkey, True, False)
     pda_authorized_withdrawer_meta = AccountMeta(pda_authorized_withdrawer, False, False)
-    vote_account_meta = AccountMeta(vote_account_pubkey, False, True)
+    vote_account_meta = AccountMeta(vote_account_pubkey.pubkey, False, True)
     sysvar_clock_meta = AccountMeta(solders.sysvar.CLOCK, False, False)
 
     accounts = [
@@ -1064,7 +1064,7 @@ async def fractionalize_existing(payer_keypair: KeypairInput, authorized_withdra
    
 
     try:
-        t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
+        t_dets = await sign_and_send_tx(transaction, client, payer_keypair, authorized_withdrawer)
         await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
         return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
     except Exception as e:

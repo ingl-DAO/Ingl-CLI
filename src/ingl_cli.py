@@ -121,8 +121,10 @@ async def finalize_rebalancing(keypair, log_level):
 @click.command(name="init", help="Initialize the validator instance. Options: --keypair/-k, --log_level/-l")
 @click.option('--validator', '-v', default = get_keypair_path(), help = "Enter the path to the validator id, or the public key of the validator id for this instance")
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
+@click.option('--authorized_withdrawer', '-aw', default = get_keypair_path(), help="Enter the path to the authorized_withdrawer keypair of the vote account you seek to fractionalize if already created")
+@click.option('--vote_account', '-va', default = None, help="Enter the path to the vote_account keypair, or the publicKey of the vote_account you seek to fractionalize")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
-async def ingl(keypair, validator, log_level):
+async def ingl(keypair, validator, authorized_withdrawer, vote_account, log_level):
 
     init_commission = 105
     counter = 0
@@ -228,8 +230,24 @@ async def ingl(keypair, validator, log_level):
     except Exception as e:
         print("Invalid Validator Input. ")
         return
+    
+    if vote_account:
+        try:
+            authorized_withdrawer_keypair = parse_keypair_input(authorized_withdrawer)
+        except Exception as e:
+            print("Invalid Authorized Withdrawer Input. ")
+            return
         
-    t_dets = await ingl_init(payer_keypair, validator_key, init_commission, max_primary_stake, nft_holders_share, initial_redemption_fee, is_validator_switchable, unit_backing, redemption_fee_duration, proposal_quorum, creator_royalty, governance_expiration_time, rarities, rarity_names, twitter_handle, discord_invite, validator_name, collection_uri, website, default_uri, client, log_level,)
+        try:
+            vote_account_key = parse_pubkey_input(vote_account)
+        except Exception as e:
+            print("Invalid Vote Account Input. ")
+            return
+        
+        t_dets = await fractionalize_existing(payer_keypair, authorized_withdrawer_keypair, vote_account_key, validator_key, init_commission, max_primary_stake, nft_holders_share, initial_redemption_fee, is_validator_switchable, unit_backing, redemption_fee_duration, proposal_quorum, creator_royalty, governance_expiration_time, rarities, rarity_names, twitter_handle, discord_invite, validator_name, collection_uri, website, default_uri, client, log_level,)
+    
+    else:
+        t_dets = await ingl_init(payer_keypair, validator_key, init_commission, max_primary_stake, nft_holders_share, initial_redemption_fee, is_validator_switchable, unit_backing, redemption_fee_duration, proposal_quorum, creator_royalty, governance_expiration_time, rarities, rarity_names, twitter_handle, discord_invite, validator_name, collection_uri, website, default_uri, client, log_level,)
     print(t_dets)
     await client.close()
 
