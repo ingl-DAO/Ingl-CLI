@@ -21,7 +21,7 @@ virtualenv IsolEnv
 
 #### Activating the virtual environment
 ```
-IsolEnv\Scripts\activate
+source IsolEnv/bin/activate
 ```
 
 ### Installing Ingl in the Isolated virtual environment (IsolEnv)

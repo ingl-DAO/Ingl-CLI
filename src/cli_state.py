@@ -1,2 +1,2 @@
 
-CLI_VERSION = "0.0.508"
+CLI_VERSION = "0.0.509"

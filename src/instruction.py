@@ -31,7 +31,7 @@ InstructionEnum = Enum(
     "ImprintRarity" / CStruct("log_level" / U8),
     "Init" / InitStruct,
     "Redeem" / CStruct("log_level"/U8),
-    "NFTWithdraw" / CStruct("cnt" / U32, "log_level"/U8),
+    "NFTWithdraw" / CStruct("cnt" / U8, "log_level"/U8),
     "ProcessRewards" / CStruct("log_level"/U8),
     "InitRebalance" / CStruct("log_level"/U8),
     "FinalizeRebalance" / CStruct("log_level"/U8),
@@ -44,6 +44,8 @@ InstructionEnum = Enum(
     "VoteGovernance" / CStruct("numeration" / U32, "vote"/Bool, "cnt"/U8, "log_level"/U8),
     "FinalizeGovernance" / CStruct("numeration"/U32, "log_level"/U8),
     "ExecuteGovernance" / CStruct("numeration"/U32, "log_level"/U8),
+    "InjectTestingData" / CStruct("num_mints"/U8, "log_level"/U8),
+    "FractionalizeExisting" / InitStruct,
     
     enum_name = "InstructionEnum",
 )
@@ -78,6 +80,7 @@ RegistryEnum = Enum(
     "InitConfig",
     "AddProgram",
     "RemovePrograms" / CStruct("program_count" / U8 ),
+    "Reset",
     "Blank",
 
  enum_name="RegistryEnum",
@@ -89,7 +92,6 @@ def build_governance_type(governance_type: GovernanceType.enum, config_account_t
     elif governance_type == GovernanceType.enum.VoteAccountGovernance():
         return GovernanceType.build(governance_type) + VoteAccountGovernance.build(vote_account_governance)
     else:
-        print("This is being executed")
         return GovernanceType.build(governance_type)
 
 def build_instruction(instruction: InstructionEnum.enum, title: Optional[str] = None, description: Optional[str] = None, governance_type: Optional[GovernanceType.enum] = None, config_account_type:Optional[ConfigAccountType.enum] = None, vote_account_governance: Optional[VoteAccountGovernance.enum] = None, log_level: int = 0):

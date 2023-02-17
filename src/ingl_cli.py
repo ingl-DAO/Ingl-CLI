@@ -12,7 +12,7 @@ from rich import print
 from solana.rpc.async_api import AsyncClient
 from .cli_state import CLI_VERSION
 import time
-uasyncclient = Uasyncclient(rpc_url.target_network)
+uasyncclient = Uasyncclient(get_network())
 
 @click.group()
 @click.version_option(version=CLI_VERSION)
@@ -24,7 +24,7 @@ def entry():
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def mint(keypair, log_level):
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -58,7 +58,7 @@ def set(program_id, url, keypair):
         print("Program ID set to: ", program_pubkey.pubkey)
     if url:
         if url.lower() == "mainnet" or url.lower() == "testnet" or url.lower() == "devnet":
-            url = rpc_url.get_network_url(url)
+            url = get_network_url(url)
         set_network(url)
         print("Network set to: ", url)
     if keypair:
@@ -90,7 +90,7 @@ config.add_command(get)
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def initialize_rebalancing(keypair, log_level):
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -106,7 +106,7 @@ async def initialize_rebalancing(keypair, log_level):
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def finalize_rebalancing(keypair, log_level):
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -121,8 +121,10 @@ async def finalize_rebalancing(keypair, log_level):
 @click.command(name="init", help="Initialize the validator instance. Options: --keypair/-k, --log_level/-l")
 @click.option('--validator', '-v', default = get_keypair_path(), help = "Enter the path to the validator id, or the public key of the validator id for this instance")
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
+@click.option('--authorized_withdrawer', '-aw', default = get_keypair_path(), help="Enter the path to the authorized_withdrawer keypair of the vote account you seek to fractionalize if already created")
+@click.option('--vote_account', '-va', default = None, help="Enter the path to the vote_account keypair, or the publicKey of the vote_account you seek to fractionalize")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
-async def ingl(keypair, validator, log_level):
+async def ingl(keypair, validator, authorized_withdrawer, vote_account, log_level):
 
     init_commission = 105
     counter = 0
@@ -215,7 +217,7 @@ async def ingl(keypair, validator, log_level):
     rarity_names = json_data['rarity_names']
     rarities = json_data['rarities']
 
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -228,8 +230,24 @@ async def ingl(keypair, validator, log_level):
     except Exception as e:
         print("Invalid Validator Input. ")
         return
+    
+    if vote_account:
+        try:
+            authorized_withdrawer_keypair = parse_keypair_input(authorized_withdrawer)
+        except Exception as e:
+            print("Invalid Authorized Withdrawer Input. ")
+            return
         
-    t_dets = await ingl_init(payer_keypair, validator_key, init_commission, max_primary_stake, nft_holders_share, initial_redemption_fee, is_validator_switchable, unit_backing, redemption_fee_duration, proposal_quorum, creator_royalty, governance_expiration_time, rarities, rarity_names, twitter_handle, discord_invite, validator_name, collection_uri, website, default_uri, client, log_level,)
+        try:
+            vote_account_key = parse_pubkey_input(vote_account)
+        except Exception as e:
+            print("Invalid Vote Account Input. ")
+            return
+        
+        t_dets = await fractionalize_existing(payer_keypair, authorized_withdrawer_keypair, vote_account_key, validator_key, init_commission, max_primary_stake, nft_holders_share, initial_redemption_fee, is_validator_switchable, unit_backing, redemption_fee_duration, proposal_quorum, creator_royalty, governance_expiration_time, rarities, rarity_names, twitter_handle, discord_invite, validator_name, collection_uri, website, default_uri, client, log_level,)
+    
+    else:
+        t_dets = await ingl_init(payer_keypair, validator_key, init_commission, max_primary_stake, nft_holders_share, initial_redemption_fee, is_validator_switchable, unit_backing, redemption_fee_duration, proposal_quorum, creator_royalty, governance_expiration_time, rarities, rarity_names, twitter_handle, discord_invite, validator_name, collection_uri, website, default_uri, client, log_level,)
     print(t_dets)
     await client.close()
 
@@ -238,7 +256,7 @@ async def ingl(keypair, validator, log_level):
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_vote_account_rewards(keypair, log_level):
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -254,7 +272,7 @@ async def process_vote_account_rewards(keypair, log_level):
 @click.option('--val_keypair', default = get_keypair_path(), help="Enter the path to the validator id keypair json file. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_create_vote_account(val_keypair, log_level):
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -271,7 +289,7 @@ async def process_create_vote_account(val_keypair, log_level):
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_delegate_gem(keypair, mint_id, log_level):
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -293,7 +311,7 @@ async def process_delegate_gem(keypair, mint_id, log_level):
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_undelegate_gem(keypair, mint_id, log_level):
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -316,7 +334,7 @@ async def process_undelegate_gem(keypair, mint_id, log_level):
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_create_governance(keypair, mint_id, log_level):
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -363,7 +381,7 @@ async def process_create_governance(keypair, mint_id, log_level):
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_vote_governance(keypair, mint, numeration, vote, log_level):
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -387,7 +405,7 @@ async def process_vote_governance(keypair, mint, numeration, vote, log_level):
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_finalize_governance(keypair, numeration, log_level):
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -405,7 +423,7 @@ async def process_finalize_governance(keypair, numeration, log_level):
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_execute_governance(keypair, numeration, log_level):
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -424,7 +442,7 @@ async def process_execute_governance(keypair, numeration, log_level):
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_upload_uris(keypair, json_path, log_level):
     client_state = uasyncclient.is_connected()
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
         payer_keypair = parse_keypair_input(keypair)
@@ -450,14 +468,14 @@ async def process_upload_uris(keypair, json_path, log_level):
         print("Done with Rarity: ", json_data["rarity_names"][cnt])
         time.sleep(3)
     for i in txs:
-        print(f"Transaction Id: [link=https://explorer.solana.com/tx/{str(i)+get_explorer_suffix()}]{str(i)}[/link]")
+        print(f"Transaction Id: [link=https://explorer.solana.com/tx/{str(i)+get_explorer_suffix(get_network())}]{str(i)}[/link]")
     await client.close()
 
 @click.command(name='reset_uris', help="Reset URIs for the Validator's instange NFTs, Options: --keypair/-k, --log_level/-l")
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 @click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
 async def process_reset_uris(keypair, log_level):
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -472,7 +490,7 @@ async def process_reset_uris(keypair, log_level):
 @click.command(name='init_registry', help="Initialize the Governance Registry Program, Options: --keypair/-k")
 @click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
 async def process_initialize_registry(keypair):
-    client = AsyncClient(rpc_url.target_network)
+    client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
@@ -483,6 +501,43 @@ async def process_initialize_registry(keypair):
     t_dets = await init_registry(payer_keypair, client)
     print(t_dets)
     await client.close()
+
+@click.command(name="reset_registry", help="Reset the Governance Registry Program, Options: --keypair/-k")
+@click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
+async def process_reset_registry(keypair):
+    client = AsyncClient(get_network())
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        payer_keypair = parse_keypair_input(keypair)
+    except Exception as e:
+        print("Invalid Keypair Input, ", e)
+        return
+    t_dets = await reset_registry(payer_keypair, client)
+    print(t_dets)
+    await client.close()
+
+@click.command(name="register_program", help="Register a Program with the Governance Registry, Options: --keypair/-k, --program_id/-p")
+@click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
+@click.option('--program_id', '-p', default = get_program_id(), help="Enter the program_id of the validator instance you want to register. Defaults to the set config program_id")
+async def process_register_program(keypair, program_id):
+    client = AsyncClient(get_network())
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        payer_keypair = parse_keypair_input(keypair)
+    except Exception as e:
+        print("Invalid Keypair Input, ", e)
+        return
+    try:
+        program_pubkey = parse_pubkey_input(program_id)
+    except Exception as e:
+        print("Invalid Pubkey Input, ", e)
+        return
+    t_dets = await register_program(payer_keypair, program_pubkey.pubkey, client)
+    print(t_dets)
+    await client.close()
+
 
 @click.command(name="get_vote_pubkey", help="Get the Vote Account Pubkey for the Validator's instance, Options: --program_id/-p")
 @click.option('--program_id', '-p', default = get_program_id(), help="Enter the program_id of the validator instance you want to get the vote account pubkey for. Defaults to the set config program_id")
@@ -497,6 +552,33 @@ async def process_get_vote_key(program_id):
     print("Vote Account Key: ", expected_vote_pubkey)
     print("Vote Account Bump: ", expected_vote_bump)
     return
+
+@click.command(name ="inject_test")
+@click.argument("num_mints", type=int)
+@click.option('--keypair', '-k', default = get_keypair_path(), help="Enter the path to the keypair that will be used to sign this transaction. Defaults to the set config keypair")
+@click.option('--log_level', '-l', default = 2, type=int, help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors")
+async def process_inject_test(keypair, num_mints, log_level):
+    client = AsyncClient(get_network())
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        payer_keypair = parse_keypair_input(keypair)
+    except Exception as e:
+        print("Invalid Keypair Input, ", e)
+        return
+
+    mints = []
+    for i in range(num_mints):
+        while True:
+            try:
+                mints.append(parse_pubkey_input(click.prompt(f"Enter the Mint Address for Mint {i+1}", type=str)).pubkey)
+                break
+            except Exception as e:
+                print("Invalid Mint Address, ", e)
+
+    t_dets = await inject_testing_data(payer_keypair, mints, client, log_level= log_level)
+    print(t_dets)
+    await client.close()
 
 entry.add_command(mint)
 entry.add_command(initialize_rebalancing)
@@ -515,5 +597,9 @@ entry.add_command(process_upload_uris)
 entry.add_command(process_reset_uris)
 entry.add_command(process_initialize_registry)
 entry.add_command(process_get_vote_key)
+entry.add_command(process_inject_test)
+entry.add_command(process_reset_registry)
+entry.add_command(process_register_program)
 if __name__ == '__main__':
+    
     entry()
