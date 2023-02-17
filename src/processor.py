@@ -975,6 +975,102 @@ async def register_program(payer_keypair: KeypairInput, program_key: Pubkey, cli
     except Exception as e:
         print(t_dets, e)
         raise e
+    
+
+
+async def fractionalize_existing(payer_keypair: KeypairInput, authorized_withdrawer: KeypairInput, vote_account_pubkey: PubkeyInput, validator_pubkey: PubkeyInput, init_commission: int, max_primary_stake: int, nft_holders_share: int, initial_redemption_fee: int, is_validator_id_switchable: bool, unit_backing: int, redemption_fee_duration: int, proposal_quorum: int, creator_royalties: int, governance_expiration_time: int, rarities: List[int], rarity_names: List[str], twitter_handle: str, discord_invite: str, validator_name: str, collection_uri: str, website: str, default_uri: str, client: AsyncClient, log_level: int = 0) -> str:
+    mint_pubkey, _mint_pubkey_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_NFT_COLLECTION_KEY, 'UTF-8')], get_program_id())
+    mint_authority_pubkey, _mint_authority_pubkey_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_MINT_AUTHORITY_KEY, 'UTF-8')], get_program_id())
+    collection_holder_pubkey, _collection_holder_pubkey_bump = Pubkey.find_program_address([bytes(ingl_constants.COLLECTION_HOLDER_KEY, 'UTF-8')], get_program_id())
+    mint_associated_account_pubkey = assoc_instructions.get_associated_token_address(collection_holder_pubkey, mint_pubkey)
+    metaplex_program_id = Pubkey.from_string("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s")
+    metadata_pda, _metadata_pda_bump = Pubkey.find_program_address([b"metadata", bytes(metaplex_program_id), bytes(mint_pubkey)], metaplex_program_id)
+    master_edition_pda, _master_edition_bump = Pubkey.find_program_address([b"metadata", bytes(metaplex_program_id), bytes(mint_pubkey), b"edition"], metaplex_program_id)
+    ingl_config_pubkey, _ingl_config_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_CONFIG_SEED, 'UTF-8')], get_program_id())
+    general_account_pubkey, _general_account_bump = Pubkey.find_program_address([bytes(ingl_constants.GENERAL_ACCOUNT_SEED, 'UTF-8')], get_program_id())
+    uris_account_pubkey, _uris_account_bump = Pubkey.find_program_address([bytes(ingl_constants.URIS_ACCOUNT_SEED, 'UTF-8')], get_program_id())
+
+    registry_program_config_key, _registry_program_config_bump = Pubkey.find_program_address([b'config'], ingl_constants.REGISTRY_PROGRAM_ID)
+    registry_config_account = await client.get_account_info(registry_program_config_key)
+    registry_config_data = RegistryConfig.parse(registry_config_account.value.data)
+    storage_numeration = registry_config_data.validator_numeration // 625
+    storage_key, _storage_bump = Pubkey.find_program_address([b'storage', storage_numeration.to_bytes(4, "big")], ingl_constants.REGISTRY_PROGRAM_ID)
+
+    pda_authorized_withdrawer, _pda_authorized_withdrawer_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_AUTHORIZED_WITHDRAWER_KEY, 'UTF-8')], get_program_id())
+
+
+    payer_account_meta = AccountMeta(payer_keypair.pubkey, True, True)
+    collection_holder_meta = AccountMeta(collection_holder_pubkey, False, True)
+    mint_account_meta = AccountMeta(mint_pubkey, False, True)
+    mint_authority_meta = AccountMeta(mint_authority_pubkey, False, False)
+    mint_associated_meta = AccountMeta(mint_associated_account_pubkey, False, True)
+    spl_program_meta = AccountMeta(spl_constants.TOKEN_PROGRAM_ID, False, False)
+    sysvar_rent_account_meta = AccountMeta(solders.sysvar.RENT, False, False)
+    system_program_meta = AccountMeta(system_program.ID, False, False)
+    token_metadata_meta = AccountMeta(metadata_pda, False, True)
+    metadata_program_id = AccountMeta(metaplex_program_id, False, False)
+    associated_program_meta = AccountMeta(spl_constants.ASSOCIATED_TOKEN_PROGRAM_ID, False, False)
+    edition_meta = AccountMeta(master_edition_pda, False, True)
+    ingl_config_meta = AccountMeta(ingl_config_pubkey, False, True)
+    general_account_meta = AccountMeta(general_account_pubkey, False, True)
+    uris_account_meta = AccountMeta(uris_account_pubkey, False, True)
+    validator_account_meta = AccountMeta(validator_pubkey.pubkey, False, True)
+    registry_program_config_meta = AccountMeta(registry_program_config_key, False, True)
+    program_meta = AccountMeta(get_program_id(), False, False)
+    team_account_meta = AccountMeta(ingl_constants.TEAM_ACCOUNT_KEY, False, True)
+    storage_account_meta = AccountMeta(storage_key, False, True)
+    registry_program_meta = AccountMeta(ingl_constants.REGISTRY_PROGRAM_ID, False, False)
+    current_authorized_withdrawer_meta = AccountMeta(authorized_withdrawer.pubkey, False, False)
+    pda_authorized_withdrawer_meta = AccountMeta(pda_authorized_withdrawer, False, False)
+    vote_account_meta = AccountMeta(vote_account_pubkey, False, True)
+    sysvar_clock_meta = AccountMeta(solders.sysvar.CLOCK, False, False)
+
+    accounts = [
+        payer_account_meta, 
+        ingl_config_meta,
+        general_account_meta,
+        uris_account_meta,
+        sysvar_rent_account_meta,
+        validator_account_meta,
+        collection_holder_meta,
+        mint_account_meta,
+        mint_authority_meta,
+        mint_associated_meta, 
+        token_metadata_meta, 
+        edition_meta,
+        spl_program_meta,
+        system_program_meta,
+        current_authorized_withdrawer_meta,
+        pda_authorized_withdrawer_meta,
+        vote_account_meta,
+        sysvar_clock_meta,
+        registry_program_config_meta,
+        program_meta,
+        team_account_meta,
+        storage_account_meta,
+
+        system_program_meta, 
+        associated_program_meta,
+        spl_program_meta, 
+        metadata_program_id,
+        registry_program_meta,
+    ]
+    # print(accounts)
+    data = build_instruction(InstructionEnum.enum.FractionalizeExisting(init_commission = init_commission, max_primary_stake = max_primary_stake, nft_holders_share = nft_holders_share, initial_redemption_fee = initial_redemption_fee, is_validator_id_switchable = is_validator_id_switchable, unit_backing = unit_backing, redemption_fee_duration = redemption_fee_duration, proposal_quorum = proposal_quorum, creator_royalties = creator_royalties, governance_expiration_time = governance_expiration_time, rarities = rarities, rarity_names = rarity_names, twitter_handle = twitter_handle, discord_invite = discord_invite, validator_name = validator_name, collection_uri = collection_uri, website = website, default_uri = default_uri, log_level = log_level))
+    transaction = Transaction()
+    # print(data)
+    transaction.add(ComputeBudgetInstruction().set_compute_unit_limit(400_000, payer_keypair.pubkey))
+    transaction.add(Instruction(accounts = accounts, program_id = get_program_id(), data = data))
+   
+
+    try:
+        t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
+        await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
+    except Exception as e:
+        return(f"Error: {e}")
+
+
 
 async def inject_testing_data(payer_keypair: KeypairInput, mints: List[Pubkey], client: AsyncClient, log_level: int = 0) -> str:
     authorized_withdrawer_key, _authorized_withdrawer_bump = Pubkey.find_program_address([bytes(ingl_constants.AUTHORIZED_WITHDRAWER_KEY, 'UTF-8')], get_program_id())
