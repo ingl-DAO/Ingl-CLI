@@ -542,15 +542,19 @@ async def process_register_program(keypair, program_id):
 @click.command(name="get_vote_pubkey", help="Get the Vote Account Pubkey for the Validator's instance, Options: --program_id/-p")
 @click.option('--program_id', '-p', default = get_program_id(), help="Enter the program_id of the validator instance you want to get the vote account pubkey for. Defaults to the set config program_id")
 async def process_get_vote_key(program_id):
+    client = AsyncClient(get_network())
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
     try:
         program_pubkey = parse_pubkey_input(program_id)
     except Exception as e:
         print("Invalid Pubkey Input, ", e)
         return
     print("Program_id: ", program_pubkey.pubkey)
-    expected_vote_pubkey, expected_vote_bump = Pubkey.find_program_address([bytes(ingl_constants.VOTE_ACCOUNT_KEY, "UTF-8")], program_pubkey.pubkey)
-    print("Vote Account Key: ", expected_vote_pubkey)
-    print("Vote Account Bump: ", expected_vote_bump)
+    config_account_pubkey, _config_account_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_CONFIG_SEED, 'UTF-8')], program_pubkey.pubkey)
+    config_data = ValidatorConfig.parse((await client.get_account_info(config_account_pubkey)).value.data)
+    vote_account_key = Pubkey(config_data.vote_account)
+    print("Vote Account Key: ", vote_account_key)
     return
 
 @click.command(name ="inject_test")

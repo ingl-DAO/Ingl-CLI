@@ -517,46 +517,6 @@ async def nft_withdraw(payer_keypair: KeypairInput, mints: List[Pubkey], client:
     except Exception as e:
         return(f"Error: {e}")
 
-async def inject_testing_data(payer_keypair: KeypairInput, mints: List[Pubkey], vote_account_id: PubkeyInput, client: AsyncClient, log_level: int = 0) -> str:
-    expected_vote_data_pubkey, _expected_vote_data_bump = Pubkey.find_program_address([bytes(ingl_constants.VOTE_DATA_ACCOUNT_KEY, 'UTF-8'), bytes(vote_account_id.pubkey)], get_program_id())
-    authorized_withdrawer_key, _authorized_withdrawer_bump = Pubkey.find_program_address([bytes(ingl_constants.AUTHORIZED_WITHDRAWER_KEY, 'UTF-8'), bytes(vote_account_id.pubkey) ], get_program_id())
-
-
-
-    payer_account_meta = AccountMeta(payer_keypair.pubkey, True, True)
-    vote_account_meta = AccountMeta(vote_account_id.pubkey, False, True)
-    sys_program_meta = AccountMeta(system_program.ID, False, False)
-    ingl_vote_data_account_meta = AccountMeta(expected_vote_data_pubkey, False, True)
-    authorized_withdrawer_meta = AccountMeta(authorized_withdrawer_key, False, True)
-
-    accounts = [
-        payer_account_meta,
-        vote_account_meta,
-        ingl_vote_data_account_meta,
-        authorized_withdrawer_meta,
-        
-    ]
-
-    for mint_pubkey in mints:
-        accounts.append(AccountMeta(mint_pubkey.pubkey, False, False))
-        gem_account_pubkey, _gem_account_bump = Pubkey.find_program_address([bytes(ingl_constants.GEM_ACCOUNT_CONST, 'UTF-8'), bytes(mint_pubkey.pubkey)], get_program_id())
-        accounts.append(AccountMeta(gem_account_pubkey, False, True))
-
-
-
-
-    accounts.append(sys_program_meta)
-    # print(accounts)
-    data = InstructionEnum.build(InstructionEnum.enum.InjectTestingData(log_level = log_level, num_nfts = len(mints)))
-    transaction = Transaction()
-    transaction.add(Instruction(accounts = accounts, program_id = get_program_id(), data = data))
-    try:
-        t_dets = await sign_and_send_tx(transaction, client, payer_keypair)
-        await client.confirm_transaction(tx_sig = t_dets.value, commitment= "finalized", sleep_seconds = 0.4, last_valid_block_height = None)
-        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
-    except Exception as e:
-        return(f"Error: {e}")
-
 async def init_governance(payer_keypair: KeypairInput, mint: PubkeyInput, client: AsyncClient, title: str, description: str, governance_type: Optional[GovernanceType.enum] = None, config_account_type:Optional[ConfigAccountType.enum] = None, vote_account_governance: Optional[VoteAccountGovernance.enum] = None,  log_level: int = 0) -> str:
     general_account_pubkey, _general_account_bump = Pubkey.find_program_address([bytes(ingl_constants.GENERAL_ACCOUNT_SEED, 'UTF-8')], get_program_id())
     config_account_pubkey, _config_account_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_CONFIG_SEED, 'UTF-8')], get_program_id())
