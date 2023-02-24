@@ -16,6 +16,7 @@ InitStruct = CStruct(
     "proposal_quorum" / U8,
     "creator_royalties" / U16,
     "governance_expiration_time" / U32,
+    "name_storage_numeration" / U32,
     "rarities" / Vec(U16),
     "rarity_names" / Vec(String),
     "twitter_handle" / String,
