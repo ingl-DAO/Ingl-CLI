@@ -1101,11 +1101,15 @@ async def reset_registry(payer_keypair: KeypairInput, client: AsyncClient,) -> s
         [b'storage', (config_data.validator_numeration // 625).to_bytes(4, 'big')], ingl_constants.REGISTRY_PROGRAM_ID)
     storage_account_meta = AccountMeta(
         pubkey=storage_account_key, is_signer=False, is_writable=True)
+    name_storage_account_meta = AccountMeta(Pubkey.find_program_address(
+        [b'name_storage', (config_data.validator_numeration // 1666
+                           ).to_bytes(4, "big")], ingl_constants.REGISTRY_PROGRAM_ID)[0], False, True)
 
     accounts = [
         payer_account_meta,
         config_account_meta,
         storage_account_meta,
+        name_storage_account_meta,
 
         system_program_meta,
     ]
@@ -1124,7 +1128,7 @@ async def reset_registry(payer_keypair: KeypairInput, client: AsyncClient,) -> s
         raise e
 
 
-async def register_program(payer_keypair: KeypairInput, program_key: Pubkey, client: AsyncClient,) -> str:
+async def register_program(payer_keypair: KeypairInput, program_key: Pubkey, client: AsyncClient, name: String) -> str:
     config_account_key, _config_bump = Pubkey.find_program_address(
         [b'config'], ingl_constants.REGISTRY_PROGRAM_ID)
     payer_account_meta = AccountMeta(
@@ -1144,20 +1148,27 @@ async def register_program(payer_keypair: KeypairInput, program_key: Pubkey, cli
         [b'storage', (config_data.validator_numeration // 625).to_bytes(4, 'big')], ingl_constants.REGISTRY_PROGRAM_ID)
     storage_account_meta = AccountMeta(
         pubkey=storage_account_key, is_signer=False, is_writable=True)
-
+    name_storage_numeration = config_data.validator_numeration // 1666
+    name_storages = [AccountMeta(Pubkey.find_program_address([b'name_storage', (i).to_bytes(
+        4, "big")], ingl_constants.REGISTRY_PROGRAM_ID)[0], False, False) for i in range(name_storage_numeration)]
+    name_storages.append(AccountMeta(Pubkey.find_program_address(
+        [b'name_storage', (name_storage_numeration).to_bytes(4, "big")], ingl_constants.REGISTRY_PROGRAM_ID)[0], False, True))
+    # print(registry_config_data)
     accounts = [
         payer_account_meta,
         config_account_meta,
         registered_program_meta,
         team_account_meta,
         storage_account_meta,
+        *name_storages,
 
         system_program_meta,
     ]
 
     t_dets = None
     try:
-        instruction_data = RegistryEnum.build(RegistryEnum.enum.AddProgram())
+        instruction_data = RegistryEnum.build(
+            RegistryEnum.enum.AddProgram(name=name))
         transaction = Transaction()
         transaction.add(Instruction(
             accounts=accounts, program_id=ingl_constants.REGISTRY_PROGRAM_ID, data=instruction_data))
