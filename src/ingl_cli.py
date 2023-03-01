@@ -197,15 +197,15 @@ async def ingl(keypair, validator, authorized_withdrawer, vote_account, log_leve
         counter += 1
         governance_expiration_time = click.prompt("How long should a governance take to expire? (in days) (>=35 days, <=365 days) ", type=int)
     governance_expiration_time = governance_expiration_time * 86_400
-    twitter_handle = click.prompt("Enter the Twitter handle of the validator: ", type=str)
-    discord_invite = click.prompt("Enter the Discord Invite of the validator: ", type=str)
-    validator_name = click.prompt("Enter the Name of the validator: ", type=str)
-    website = click.prompt("Enter the Website of the validator: ", type=str)
-    default_uri = click.prompt("Enter the Default URI of the validator: ", type=str)
+    twitter_handle = click.prompt("Enter the Twitter handle of the validator", type=str)
+    discord_invite = click.prompt("Enter the Discord Invite of the validator", type=str)
+    validator_name = click.prompt("Enter the Name of the validator", type=str)
+    website = click.prompt("Enter the Website of the validator", type=str)
+    default_uri = click.prompt("Enter the Default URI of the validator", type=str)
 
     json_data = {}
     while 'uris' not in json_data:
-        json_path = click.prompt("Enter the Collection path to the config json: ", type=str)
+        json_path = click.prompt("Enter the Collection path to the config json", type=str)
         try:
             f = open(f"{json_path}", "r")
             json_data = json.load(f)
@@ -537,7 +537,6 @@ async def process_register_program(keypair, program_id):
     t_dets = await register_program(payer_keypair, program_pubkey.pubkey, client)
     print(t_dets)
     await client.close()
-
 
 @click.command(name="get_vote_pubkey", help="Get the Vote Account Pubkey for the Validator's instance, Options: --program_id/-p")
 @click.option('--program_id', '-p', default = get_program_id(), help="Enter the program_id of the validator instance you want to get the vote account pubkey for. Defaults to the set config program_id")

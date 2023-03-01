@@ -11,6 +11,7 @@ from solana.transaction import Transaction
 from solders.rpc.responses import SendTransactionResp
 from solders.signature import Signature
 import os
+from construct import Adapter
 
 
 class Constants:
