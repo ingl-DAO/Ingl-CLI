@@ -25,15 +25,8 @@ async def ingl_init(payer_keypair: KeypairInput, validator_pubkey: PubkeyInput, 
     this_program_data_pubkey, _this_program_data_bump = Pubkey.find_program_address([bytes(get_program_id())], ingl_constants.BPF_LOADER_UPGRADEABLE)
 
     registry_program_config_key, _registry_program_config_bump = Pubkey.find_program_address([b'config'], ingl_constants.REGISTRY_PROGRAM_ID)
-    registry_config_account = await client.get_account_info(registry_program_config_key)
-    registry_config_data = RegistryConfig.parse(registry_config_account.value.data)
-    storage_numeration = registry_config_data.validator_numeration // 625
-    name_storage_numeration = registry_config_data.validator_numeration // 1666
-    storage_key, _storage_bump = Pubkey.find_program_address([b'storage', storage_numeration.to_bytes(4, "big")], ingl_constants.REGISTRY_PROGRAM_ID)
-
-    name_storages = [AccountMeta(Pubkey.find_program_address([b'name_storage', (i).to_bytes(4, "big")], ingl_constants.REGISTRY_PROGRAM_ID)[0], False, False) for i in range(name_storage_numeration)]
-    name_storages.append(AccountMeta(Pubkey.find_program_address([b'name_storage', (name_storage_numeration).to_bytes(4, "big")], ingl_constants.REGISTRY_PROGRAM_ID)[0], False, True))
-    # print(registry_config_data)
+    storage_key, _storage_bump = Pubkey.find_program_address([b'storage'], ingl_constants.REGISTRY_PROGRAM_ID)
+    name_storage_meta = AccountMeta(Pubkey.find_program_address([b'name_storage',], ingl_constants.REGISTRY_PROGRAM_ID)[0], False, True)
 
     payer_account_meta = AccountMeta(payer_keypair.pubkey, True, True)
     collection_holder_meta = AccountMeta(collection_holder_pubkey, False, True)
@@ -79,7 +72,7 @@ async def ingl_init(payer_keypair: KeypairInput, validator_pubkey: PubkeyInput, 
         program_meta,
         team_account_meta,
         storage_account_meta,
-        *name_storages,
+        name_storage_meta,
 
         system_program_meta, 
         associated_program_meta,
@@ -88,7 +81,7 @@ async def ingl_init(payer_keypair: KeypairInput, validator_pubkey: PubkeyInput, 
         registry_program_meta,
     ]
     # print(accounts)
-    data = build_instruction(InstructionEnum.enum.Init(init_commission = init_commission, max_primary_stake = max_primary_stake, nft_holders_share = nft_holders_share, initial_redemption_fee = initial_redemption_fee, is_validator_id_switchable = is_validator_id_switchable, unit_backing = unit_backing, redemption_fee_duration = redemption_fee_duration, proposal_quorum = proposal_quorum, creator_royalties = creator_royalties, governance_expiration_time = governance_expiration_time, name_storage_numeration = name_storage_numeration, rarities = rarities, rarity_names = rarity_names, twitter_handle = twitter_handle, discord_invite = discord_invite, validator_name = validator_name, collection_uri = collection_uri, website = website, default_uri = default_uri, log_level = log_level))
+    data = build_instruction(InstructionEnum.enum.Init(init_commission = init_commission, max_primary_stake = max_primary_stake, nft_holders_share = nft_holders_share, initial_redemption_fee = initial_redemption_fee, is_validator_id_switchable = is_validator_id_switchable, unit_backing = unit_backing, redemption_fee_duration = redemption_fee_duration, proposal_quorum = proposal_quorum, creator_royalties = creator_royalties, governance_expiration_time = governance_expiration_time, rarities = rarities, rarity_names = rarity_names, twitter_handle = twitter_handle, discord_invite = discord_invite, validator_name = validator_name, collection_uri = collection_uri, website = website, default_uri = default_uri, log_level = log_level))
     transaction = Transaction()
     # print(data)
     transaction.add(ComputeBudgetInstruction().set_compute_unit_limit(300_000, payer_keypair.pubkey))
@@ -960,11 +953,8 @@ async def fractionalize_existing(payer_keypair: KeypairInput, authorized_withdra
     uris_account_pubkey, _uris_account_bump = Pubkey.find_program_address([bytes(ingl_constants.URIS_ACCOUNT_SEED, 'UTF-8')], get_program_id())
 
     registry_program_config_key, _registry_program_config_bump = Pubkey.find_program_address([b'config'], ingl_constants.REGISTRY_PROGRAM_ID)
-    registry_config_account = await client.get_account_info(registry_program_config_key)
-    registry_config_data = RegistryConfig.parse(registry_config_account.value.data)
-    storage_numeration = registry_config_data.validator_numeration // 625
-    name_storage_numeration = registry_config_data.validator_numeration // 1666
-    storage_key, _storage_bump = Pubkey.find_program_address([b'storage', storage_numeration.to_bytes(4, "big")], ingl_constants.REGISTRY_PROGRAM_ID)
+    storage_key, _storage_bump = Pubkey.find_program_address([b'storage'], ingl_constants.REGISTRY_PROGRAM_ID)
+    name_storage_meta = AccountMeta(Pubkey.find_program_address([b'name_storage',], ingl_constants.REGISTRY_PROGRAM_ID)[0], False, True)
 
     pda_authorized_withdrawer, _pda_authorized_withdrawer_bump = Pubkey.find_program_address([bytes(ingl_constants.INGL_AUTHORIZED_WITHDRAWER_KEY, 'UTF-8')], get_program_id())
 
@@ -1017,6 +1007,7 @@ async def fractionalize_existing(payer_keypair: KeypairInput, authorized_withdra
         program_meta,
         team_account_meta,
         storage_account_meta,
+        name_storage_meta,
 
         system_program_meta, 
         associated_program_meta,
@@ -1025,7 +1016,7 @@ async def fractionalize_existing(payer_keypair: KeypairInput, authorized_withdra
         registry_program_meta,
     ]
     # print(accounts)
-    data = build_instruction(InstructionEnum.enum.FractionalizeExisting(init_commission = init_commission, max_primary_stake = max_primary_stake, nft_holders_share = nft_holders_share, initial_redemption_fee = initial_redemption_fee, is_validator_id_switchable = is_validator_id_switchable, unit_backing = unit_backing, redemption_fee_duration = redemption_fee_duration, proposal_quorum = proposal_quorum, creator_royalties = creator_royalties, governance_expiration_time = governance_expiration_time, name_storage_numeration = name_storage_numeration, rarities = rarities, rarity_names = rarity_names, twitter_handle = twitter_handle, discord_invite = discord_invite, validator_name = validator_name, collection_uri = collection_uri, website = website, default_uri = default_uri, log_level = log_level))
+    data = build_instruction(InstructionEnum.enum.FractionalizeExisting(init_commission = init_commission, max_primary_stake = max_primary_stake, nft_holders_share = nft_holders_share, initial_redemption_fee = initial_redemption_fee, is_validator_id_switchable = is_validator_id_switchable, unit_backing = unit_backing, redemption_fee_duration = redemption_fee_duration, proposal_quorum = proposal_quorum, creator_royalties = creator_royalties, governance_expiration_time = governance_expiration_time, rarities = rarities, rarity_names = rarity_names, twitter_handle = twitter_handle, discord_invite = discord_invite, validator_name = validator_name, collection_uri = collection_uri, website = website, default_uri = default_uri, log_level = log_level))
     transaction = Transaction()
     # print(data)
     transaction.add(ComputeBudgetInstruction().set_compute_unit_limit(400_000, payer_keypair.pubkey))
