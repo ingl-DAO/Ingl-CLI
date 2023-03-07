@@ -1204,13 +1204,13 @@ async def delist(keypair, log_level):
     default=get_market_keypair_path(),
     help="Enter the path to the payer keypair. Defaults to the set config keypair",
 )
-async def buy(payer, log_level):
+async def buy(keypair, log_level):
     assert log_level >= 0 and log_level <= 5, "Log level must be between 0 and 5"
     client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
-        payer = parse_keypair_input(payer)
+        payer = parse_keypair_input(keypair)
     except Exception as e:
         print("Invalid keypair provided.")
         return
@@ -1229,13 +1229,13 @@ async def buy(payer, log_level):
     default=get_market_keypair_path(),
     help="Enter the path to the payer keypair. Defaults to the set config keypair",
 )
-async def withdraw_rewards(payer, log_level):
+async def withdraw_rewards(keypair, log_level):
     assert log_level >= 0 and log_level <= 5, "Log level must be between 0 and 5"
     client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
-        authorized_withdrawer = parse_keypair_input(payer)
+        authorized_withdrawer = parse_keypair_input(keypair)
     except Exception as e:
         print("Invalid keypair provided.")
         return
@@ -1295,13 +1295,13 @@ async def request_mediation(keypair, log_level):
     type=int,
     help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors",
 )
-async def mediate(payer, log_level):
+async def mediate(keypair, log_level):
     assert log_level >= 0 and log_level <= 5, "Log level must be between 0 and 5"
     client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
-        payer = parse_keypair_input(payer)
+        payer = parse_keypair_input(keypair)
     except Exception as e:
         print("Invalid keypair provided.")
         return
@@ -1332,13 +1332,13 @@ async def mediate(payer, log_level):
     type=int,
     # help="Enter the index of the secondary item to be validated.",
 )
-async def validate_secondary_item(payer, log_level, secondary_item):
+async def validate_secondary_item(keypair, log_level, secondary_item):
     assert log_level >= 0 and log_level <= 5, "Log level must be between 0 and 5"
     client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
     try:
-        payer = parse_keypair_input(payer)
+        payer = parse_keypair_input(keypair)
     except Exception as e:
         print("Invalid keypair provided.")
         return
