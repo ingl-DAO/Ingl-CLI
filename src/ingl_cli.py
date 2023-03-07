@@ -1020,6 +1020,347 @@ async def process_inject_test(keypair, num_mints, log_level):
     await client.close()
 
 
+@click.group(name="markets")
+async def market():
+    pass
+
+
+@click.group(name="config")
+async def market_config():
+    pass
+
+
+@click.command(
+    name="set",
+    help="Set the default config options. Options: --program_id/-p, --keypair/-k",
+)
+@click.option(
+    "--program_id",
+    "-p",
+    help="Enter the program Id of the validator instance transactions will default to",
+)
+@click.option(
+    "--keypair",
+    "-k",
+    help="Enter the path to the keypair that transactions will be signed with by default.",
+)
+def market_set(program_id, keypair):
+    assert (
+        program_id or keypair
+    ), "No options specified. Use --help for more information."
+    if program_id:
+        try:
+            program_pubkey = parse_pubkey_input(program_id)
+        except Exception as e:
+            print("Invalid Public Key provided.")
+            return
+        set_market_program_id(program_pubkey.pubkey.__str__())
+        print("Program ID set to: ", program_pubkey.pubkey)
+    if keypair:
+        if set_market_keypair_path(keypair):
+            pass
+        else:
+            return
+    if not program_id and not keypair:
+        print("No options specified. Use --help for more information.")
+        return
+    print("Config set successfully.")
+
+
+@click.command(name="get")
+def market_get():
+
+    print("\nProgram ID: ", get_market_program_id())
+    print("Network: ", get_network())
+    print("Keypair: ", get_market_keypair_path())
+    try:
+        print(
+            "Keypair Public Key: ",
+            parse_keypair_input(get_market_keypair_path()).pubkey,
+        )
+    except Exception as e:
+        pass
+    print("\nConfig retrieved successfully.")
+
+
+@click.command(
+    name="list",
+    help="Initialize the validator instance. Options: --upgrade_authority/-u, --authorized_withdrawer/-aw, --log_level/-l",
+)
+@click.argument("validator_json", type=str)
+@click.option(
+    "--upgrade_authority",
+    "-u",
+    default=get_market_keypair_path(),
+    help="Enter the path to the program's upgrade authority. Defaults to the set config keypair",
+)
+@click.option(
+    "--authorized_withdrawer",
+    "-aw",
+    default=get_market_keypair_path(),
+    help="Enter the path to the authorized_withdrawer keypair of the vote account. Defaults to the set config keypair",
+)
+@click.option(
+    "--log_level",
+    "-l",
+    default=2,
+    type=int,
+    help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors",
+)
+async def list_validator(
+    validator_json, upgrade_authority, authorized_withdrawer, log_level
+):
+    assert log_level >= 0 and log_level <= 5, "Log level must be between 0 and 5"
+    client = AsyncClient(get_network())
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        upgrade_authority = parse_keypair_input(upgrade_authority)
+        authorized_withdrawer = parse_keypair_input(authorized_withdrawer)
+    except Exception as e:
+        print("Invalid keypair provided.")
+        return
+    try:
+        validator_json = json.loads(validator_json)
+    except Exception as e:
+        print("Invalid JSON provided.")
+        return
+
+    try:
+        vote_account = parse_pubkey_input(validator_json["vote_account"])
+    except Exception as e:
+        print("Invalid vote account provided.")
+        return
+
+    try:
+        authorized_withdrawer_cost = int(validator_json["authorized_withdrawer_cost"])
+        mediatable_date = time.time + 86400 * int(validator_json["mediation_wait_days"])
+        description = validator_json["description"]
+        validator_name = validator_json["validator_name"]
+        validator_logo_url = validator_json["validator_logo_url"]
+        secondary_items = validator_json["secondary_items"]
+    except Exception as e:
+        print(f"Invalid JSON provided: {e}")
+        return
+
+    t_dets = await process_list_validator(
+        authorized_withdrawer,
+        upgrade_authority,
+        vote_account,
+        authorized_withdrawer_cost,
+        mediatable_date,
+        secondary_items,
+        description,
+        validator_name,
+        validator_logo_url,
+        client=client,
+        log_level=log_level,
+    )
+    await client.close()
+    print(t_dets)
+
+
+@click.command(
+    name="delist",
+    help="Delist the validator instance. Options: --keypair/-k, --log_level/-l",
+)
+@click.option(
+    "-k",
+    "--keypair",
+    default=get_market_keypair_path(),
+    help="Enter the path to the authorized_withdrawer keypair of the sales instance. Defaults to the set config keypair",
+)
+@click.option(
+    "-l",
+    "--log_level",
+    default=2,
+    type=int,
+    help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors",
+)
+async def delist(keypair, log_level):
+    assert log_level >= 0 and log_level <= 5, "Log level must be between 0 and 5"
+    client = AsyncClient(get_network())
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        authorized_withdrawer = parse_keypair_input(keypair)
+    except Exception as e:
+        print("Invalid keypair provided.")
+        return
+    t_dets = await process_delist_validator(
+        authorized_withdrawer, client=client, log_level=log_level
+    )
+    await client.close()
+    print(t_dets)
+
+
+@click.command(
+    name="buy",
+    help="Buy the validator instance. Options: --keypair/-k, --log_level/-l",
+)
+@click.option(
+    "-k",
+    "--keypair",
+    default=get_market_keypair_path(),
+    help="Enter the path to the payer keypair. Defaults to the set config keypair",
+)
+async def buy(payer, log_level):
+    assert log_level >= 0 and log_level <= 5, "Log level must be between 0 and 5"
+    client = AsyncClient(get_network())
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        payer = parse_keypair_input(payer)
+    except Exception as e:
+        print("Invalid keypair provided.")
+        return
+    t_dets = await process_buy_validator(payer, client=client, log_level=log_level)
+    await client.close()
+    print(t_dets)
+
+
+@click.command(
+    name="withraw_rewards",
+    help="withdraw rewards from the running validator. Options: --keypair/-k, --log_level/-l",
+)
+@click.option(
+    "-k",
+    "--keypair",
+    default=get_market_keypair_path(),
+    help="Enter the path to the payer keypair. Defaults to the set config keypair",
+)
+async def withdraw_rewards(payer, log_level):
+    assert log_level >= 0 and log_level <= 5, "Log level must be between 0 and 5"
+    client = AsyncClient(get_network())
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        authorized_withdrawer = parse_keypair_input(payer)
+    except Exception as e:
+        print("Invalid keypair provided.")
+        return
+    t_dets = await process_withdraw_rewards(
+        authorized_withdrawer, client=client, log_level=log_level
+    )
+    await client.close()
+    print(t_dets)
+
+
+@click.command(
+    name="request_mediation",
+    help="request mediation for the running validator. Options: --keypair/-k, --log_level/-l",
+)
+@click.option(
+    "-k",
+    "--keypair",
+    default=get_market_keypair_path(),
+    help="Enter the path to the payer keypair. Defaults to the set config keypair",
+)
+@click.option(
+    "-l",
+    "--log_level",
+    default=2,
+    type=int,
+    help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors",
+)
+async def request_mediation(keypair, log_level):
+    assert log_level >= 0 and log_level <= 5, "Log level must be between 0 and 5"
+    client = AsyncClient(get_network())
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        payer = parse_keypair_input(keypair)
+    except Exception as e:
+        print("Invalid keypair provided.")
+        return
+    t_dets = await process_request_mediation(payer, client=client, log_level=log_level)
+    await client.close()
+    print(t_dets)
+
+
+@click.command(
+    name="mediate",
+    help="Mediate a conflict during a sale. Options: --keypair/-k, --log_level/-l",
+)
+@click.option(
+    "-k",
+    "--keypair",
+    default=get_market_keypair_path(),
+    help="Enter the path to the payer keypair. Defaults to the set config keypair",
+)
+@click.option(
+    "-l",
+    "--log_level",
+    default=2,
+    type=int,
+    help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors",
+)
+async def mediate(payer, log_level):
+    assert log_level >= 0 and log_level <= 5, "Log level must be between 0 and 5"
+    client = AsyncClient(get_network())
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        payer = parse_keypair_input(payer)
+    except Exception as e:
+        print("Invalid keypair provided.")
+        return
+    t_dets = await process_mediate(payer, client=client, log_level=log_level)
+    await client.close()
+    print(t_dets)
+
+
+@click.command(
+    name="validate_secondary_item",
+    help="Validate a secondary item sale completion. Options: --keypair/-k, --log_level/-l",
+)
+@click.option(
+    "-k",
+    "--keypair",
+    default=get_market_keypair_path(),
+    help="Enter the path to the payer keypair. Defaults to the set config keypair",
+)
+@click.option(
+    "-l",
+    "--log_level",
+    default=2,
+    type=int,
+    help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors",
+)
+@click.argument(
+    "secondary_item",
+    type=int,
+    # help="Enter the index of the secondary item to be validated.",
+)
+async def validate_secondary_item(payer, log_level, secondary_item):
+    assert log_level >= 0 and log_level <= 5, "Log level must be between 0 and 5"
+    client = AsyncClient(get_network())
+    client_state = await client.is_connected()
+    print("Client is connected" if client_state else "Client is Disconnected")
+    try:
+        payer = parse_keypair_input(payer)
+    except Exception as e:
+        print("Invalid keypair provided.")
+        return
+    t_dets = await process_validate_secondary_item_transfers(
+        payer, secondary_item, client=client, log_level=log_level
+    )
+    await client.close()
+    print(t_dets)
+
+
+market.add_command(market_config)
+market.add_command(list_validator)
+market.add_command(delist)
+market.add_command(buy)
+market.add_command(withdraw_rewards)
+market.add_command(request_mediation)
+market.add_command(mediate)
+market.add_command(validate_secondary_item)
+market_config.add_command(market_set)
+market_config.add_command(market_get)
+
+
 entry.add_command(mint)
 entry.add_command(initialize_rebalancing)
 entry.add_command(finalize_rebalancing)
@@ -1033,6 +1374,7 @@ entry.add_command(process_finalize_governance)
 entry.add_command(process_execute_governance)
 entry.add_command(process_vote_account_rewards)
 entry.add_command(config)
+entry.add_command(market)
 entry.add_command(process_upload_uris)
 entry.add_command(process_reset_uris)
 entry.add_command(process_initialize_registry)

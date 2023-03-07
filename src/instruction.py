@@ -2,6 +2,7 @@ from typing import Optional
 from borsh_construct import *
 from solders.pubkey import Pubkey
 from solders.instruction import Instruction, AccountMeta
+from .state import get_market_program_id
 
 
 InitStruct = CStruct(
@@ -82,6 +83,100 @@ RegistryEnum = Enum(
     "Reset",
     "Blank",
     enum_name="RegistryEnum",
+)
+
+
+SecondaryItem = CStruct(
+    "cost" / U64,
+    "name" / String,
+    "description" / String,
+)
+
+
+MediationShares = CStruct(
+    "buyer" / U64,
+    "seller" / U64,
+    "team" / U64,
+)
+
+MarketInstructionEnum = Enum(
+    "List"
+    / CStruct(
+        "log_level" / U8,
+        "authorized_withdrawer_cost" / U64,
+        "mediatable_date" / U32,
+        "secondary_items" / Vec(SecondaryItem),
+        "description" / String,
+        "validator_name" / String,
+        "validator_logo_url" / String,
+    ),
+    "Delist"
+    / CStruct(
+        "log_level" / U8,
+    ),
+    "Buy"
+    / CStruct(
+        "log_level" / U8,
+    ),
+    "WithdrawRewards"
+    / CStruct(
+        "log_level" / U8,
+    ),
+    "RequestMediation"
+    / CStruct(
+        "log_level" / U8,
+    ),
+    "Mediate"
+    / CStruct(
+        "log_level" / U8,
+        "mediation_shares" / MediationShares,
+    ),
+    "ValidateSecondaryItemsTransfers"
+    / CStruct(
+        "log_level" / U8,
+        "item_index" / U32,
+    ),
+    enum_name="InstructionEnum",
+)
+
+
+def build_market_instruction(
+    instruction: MarketInstructionEnum.enum, accounts: list[AccountMeta]
+) -> Instruction:
+    return Instruction(
+        program_id=get_market_program_id(),
+        data=MarketInstructionEnum.build(instruction),
+        accounts=accounts,
+    )
+
+
+Purchase = CStruct(
+    "buyer" / U32[32],
+    "date" / U32,
+    "date_finalized" / Option(U32),
+)
+
+StoredSecondaryItem = CStruct(
+    "cost" / U64,
+    "name" / String,
+    "description" / String,
+    "date_validated" / Option(U32),
+)
+
+Storage = CStruct(
+    "validation_phrase" / U32,
+    "authorized_withdrawer" / U32[32],
+    "vote_account" / U32[32],
+    "authorized_withdrawer_cost" / U64,
+    "mediatable_date" / U32,
+    "purchase" / Option(Purchase),
+    "request_mediation_date" / Option(U32),
+    "mediation_date" / Option(U32),
+    "mediation_shares" / Option(MediationShares),
+    "secondary_items" / Vec(StoredSecondaryItem),
+    "description" / String,
+    "validator_name" / String,
+    "validator_logo_url" / String,
 )
 
 

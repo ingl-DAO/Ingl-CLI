@@ -33,19 +33,27 @@ class Constants:
     T_WITHDRAW_KEY = "t_withdraw_key"
     INGL_REGISTRY_CONFIG_SEED = "config"
 
-    TEAM_ACCOUNT_KEY = Pubkey.from_string(
-        "Team111111111111111111111111111111111111111")
-    STAKE_PROGRAM_ID = Pubkey.from_string(
-        "Stake11111111111111111111111111111111111111")
+    PDA_AUTHORIZED_WITHDRAWER_SEED = b"authorized_withdrawer"
+    PROGRAM_STORAGE_SEED = b"program_storage"
+    PDA_UPGRADE_AUTHORITY_SEED = b"upgrade_authority"
+    ESCROW_ACCOUNT_SEED = b"escrow_account"
+    REGISTRY_STORAGE_SEED = b"marketplace_storage"
+
+    ESCROWED_BASIS_POINTS = 2000
+    TEAM_FEES_BASIS_POINTS = 10
+
+    TEAM_ADDRESS = Pubkey.from_string("Et2tm6NsfBZJbEYXtWTv9k51V4tWtQvufexSgXoDRGVA")
+    MEDIATORS = [Pubkey.from_string("Et2tm6NsfBZJbEYXtWTv9k51V4tWtQvufexSgXoDRGVA")]
+
+    STAKE_PROGRAM_ID = Pubkey.from_string("Stake11111111111111111111111111111111111111")
     STAKE_CONFIG_PROGRAM_ID = Pubkey.from_string(
         "StakeConfig11111111111111111111111111111111"
     )
-    VOTE_PROGRAM_ID = Pubkey.from_string(
-        "Vote111111111111111111111111111111111111111")
+    VOTE_PROGRAM_ID = Pubkey.from_string("Vote111111111111111111111111111111111111111")
     BPF_LOADER_UPGRADEABLE = Pubkey.from_string(
         "BPFLoaderUpgradeab1e11111111111111111111111"
     )
-    REGISTRY_PROGRAM_ID = Pubkey.from_string(
+    REGISTRY_PROGRAM = Pubkey.from_string(
         "38pfsot7kCZkrttx1THEDXEz4JJXmCCcaDoDieRtVuy5"
     )
 
@@ -258,8 +266,7 @@ async def sign_and_send_tx(
                 raise Exception("KeypairInput is not valid")
         else:
             raise ValueError(
-                "Invalid argument expected a KeypairInput, Found -> : " +
-                str(type(arg))
+                "Invalid argument expected a KeypairInput, Found -> : " + str(type(arg))
             )
     # print("Reached here")
     opts_to_use = types.TxOpts(
@@ -272,6 +279,21 @@ async def sign_and_send_tx(
         client._process_blockhash_resp(blockhash_resp, used_immediately=False)
     # print("finished")
     return txn_resp
+
+
+async def sign_send_confirm_return_tx_as_link(
+    tx: Transaction, client: AsyncClient, *args
+) -> str:
+    # Sign Transaction, Send Transaction, and Confirm Transaction, Return Transaction Signature
+    try:
+        t_dets = await sign_and_send_tx(tx, client, *args)
+        await client.confirm_transaction(
+            tx_sig=t_dets.value, commitment="finalized", sleep_seconds=0.4
+        )
+
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
+    except Exception as e:
+        return f"Error: {e}"
 
 
 def set_config(key: str, value: str):
@@ -332,7 +354,7 @@ def set_network(network: str):
 def get_keypair_path() -> str:
     keypair_path = get_config("keypair_path")
     if keypair_path == "":
-        return f"{os.path.expanduser('~')}/.config/solana/ingl/id.json"
+        return f"{os.path.expanduser('~')}/.config/solana/id.json"
     else:
         return keypair_path
 
@@ -345,6 +367,41 @@ def set_keypair_path(keypair_path: str) -> bool:
         print("Invalid keypair path")
         return False
     set_config("keypair_path", path)
+    print("Keypair path set to: ", path)
+    print("Keypair Public Key: ", keypair.pubkey())
+    return True
+
+
+def get_market_program_id() -> Pubkey:
+    program_id_str = get_config("markets_program_id")
+    try:
+        return Pubkey.from_string(program_id_str)
+    except:
+        raise Exception(
+            "Invalid markets program id, please set one with: ingl markets config set -p <program_id>"
+        )
+
+
+def set_market_program_id(program_id: str):
+    set_config("markets_program_id", program_id)
+
+
+def get_market_keypair_path() -> str:
+    keypair_path = get_config("markets_keypair_path")
+    if keypair_path == "":
+        return f"{os.path.expanduser('~')}/.config/solana/id.json"
+    else:
+        return keypair_path
+
+
+def set_market_keypair_path(keypair_path: str) -> bool:
+    path = os.path.abspath(keypair_path)
+    try:
+        keypair = keypair_from_json(path)
+    except:
+        print("Invalid keypair path")
+        return False
+    set_config("markets_keypair_path", path)
     print("Keypair path set to: ", path)
     print("Keypair Public Key: ", keypair.pubkey())
     return True
