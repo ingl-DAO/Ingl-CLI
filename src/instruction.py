@@ -94,9 +94,9 @@ SecondaryItem = CStruct(
 
 
 MediationShares = CStruct(
-    "buyer" / U64,
-    "seller" / U64,
-    "team" / U64,
+    "buyer" / U8,
+    "seller" / U8,
+    "team" / U8,
 )
 
 MarketInstructionEnum = Enum(
@@ -151,7 +151,7 @@ def build_market_instruction(
 
 
 Purchase = CStruct(
-    "buyer" / U32[32],
+    "buyer" / U8[32],
     "date" / U32,
     "date_finalized" / Option(U32),
 )
@@ -165,8 +165,8 @@ StoredSecondaryItem = CStruct(
 
 Storage = CStruct(
     "validation_phrase" / U32,
-    "authorized_withdrawer" / U32[32],
-    "vote_account" / U32[32],
+    "authorized_withdrawer" / U8[32],
+    "vote_account" / U8[32],
     "authorized_withdrawer_cost" / U64,
     "mediatable_date" / U32,
     "purchase" / Option(Purchase),

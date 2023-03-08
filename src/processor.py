@@ -1973,7 +1973,7 @@ async def process_list_validator(
         pubkey=get_market_program_id(), is_signer=False, is_writable=True
     )
     this_program_data_meta = AccountMeta(
-        pubkey=this_program_data_key, is_signer=False, is_writable=False
+        pubkey=this_program_data_key, is_signer=False, is_writable=True
     )
     current_upgrade_authority_meta = AccountMeta(
         pubkey=current_upgrade_authority.pubkey, is_signer=True, is_writable=False
@@ -1985,7 +1985,7 @@ async def process_list_validator(
         pubkey=solders.sysvar.CLOCK, is_signer=False, is_writable=False
     )
     team_account_meta = AccountMeta(
-        pubkey=ingl_constants.TEAM_ACCOUNT, is_signer=False, is_writable=True
+        pubkey=ingl_constants.TEAM_ADDRESS, is_signer=False, is_writable=True
     )
     registry_storage_meta = AccountMeta(
         pubkey=registry_storage_key, is_signer=False, is_writable=True
@@ -2001,6 +2001,9 @@ async def process_list_validator(
     )
     bpf_loader_upgradeable_meta = AccountMeta(
         pubkey=ingl_constants.BPF_LOADER_UPGRADEABLE, is_signer=False, is_writable=False
+    )
+    register_program_meta = AccountMeta(
+        pubkey=ingl_constants.REGISTRY_PROGRAM, is_signer=False, is_writable=False
     )
 
     account_metas = [
@@ -2020,7 +2023,9 @@ async def process_list_validator(
         # programs listed below
         vote_program_meta,
         bpf_loader_upgradeable_meta,
+        register_program_meta,
     ]
+    # print(account_metas)
 
     # Forming Transaction
     transaction = Transaction()
@@ -2088,7 +2093,7 @@ async def process_delist_validator(
         pubkey=get_market_program_id(), is_signer=False, is_writable=True
     )
     this_program_data_meta = AccountMeta(
-        pubkey=this_program_data_key, is_signer=False, is_writable=False
+        pubkey=this_program_data_key, is_signer=False, is_writable=True
     )
     pda_upgrade_authority_meta = AccountMeta(
         pubkey=pda_upgrade_authority_key, is_signer=False, is_writable=False
@@ -2143,7 +2148,7 @@ async def process_buy_validator(
         [ingl_constants.PROGRAM_STORAGE_SEED], get_market_program_id()
     )
     escrow_account_key, _escrow_bump = Pubkey.find_program_address(
-        [ingl_constants.ESCROW_SEED], get_market_program_id()
+        [ingl_constants.ESCROW_ACCOUNT_SEED], get_market_program_id()
     )
 
     storage_account_data = Storage.parse(
@@ -2174,8 +2179,11 @@ async def process_buy_validator(
     escrow_account_meta = AccountMeta(
         pubkey=escrow_account_key, is_signer=False, is_writable=True
     )
+    team_account_meta = AccountMeta(
+        pubkey=ingl_constants.TEAM_ADDRESS, is_signer=False, is_writable=True
+    )
     system_program_meta = AccountMeta(
-        pubkey=system_program, is_signer=False, is_writable=False
+        pubkey=system_program.ID, is_signer=False, is_writable=False
     )
     vote_program_meta = AccountMeta(
         pubkey=ingl_constants.VOTE_PROGRAM_ID, is_signer=False, is_writable=False
@@ -2189,6 +2197,7 @@ async def process_buy_validator(
         sysvar_clock_meta,
         pda_authorized_withdrawer_meta,
         escrow_account_meta,
+        team_account_meta,
         # programs listed below
         system_program_meta,
         vote_program_meta,
@@ -2299,6 +2308,7 @@ async def process_request_mediation(
 
 async def process_mediate(
     payer: KeypairInput,
+    mediation_shares: dict,
     client: AsyncClient,
     log_level: int = 0,
 ) -> str:
@@ -2332,7 +2342,7 @@ async def process_mediate(
         pubkey=escrow_account_key, is_signer=False, is_writable=True
     )
     team_account_meta = AccountMeta(
-        pubkey=ingl_constants.TEAM_ACCOUNT, is_signer=False, is_writable=True
+        pubkey=ingl_constants.TEAM_ADDRESS, is_signer=False, is_writable=True
     )
 
     system_program_meta = AccountMeta(
@@ -2354,7 +2364,9 @@ async def process_mediate(
     transaction = Transaction()
     transaction.add(
         build_market_instruction(
-            MarketInstructionEnum.enum.ProcessMediation(log_level=log_level),
+            MarketInstructionEnum.enum.ProcessMediation(
+                log_level=log_level, mediation_shares=mediation_shares
+            ),
             account_metas,
         )
     )

@@ -1121,7 +1121,9 @@ async def list_validator(
         print("Invalid keypair provided.")
         return
     try:
-        validator_json = json.loads(validator_json)
+        json_file = open(validator_json)
+        validator_json = json.load(json_file)
+        json_file.close()
     except Exception as e:
         print("Invalid JSON provided.")
         return
@@ -1134,7 +1136,9 @@ async def list_validator(
 
     try:
         authorized_withdrawer_cost = int(validator_json["authorized_withdrawer_cost"])
-        mediatable_date = time.time + 86400 * int(validator_json["mediation_wait_days"])
+        mediatable_date = int(
+            time.time() + 86400 * int(validator_json["mediation_wait_days"])
+        )
         description = validator_json["description"]
         validator_name = validator_json["validator_name"]
         validator_logo_url = validator_json["validator_logo_url"]
@@ -1203,6 +1207,13 @@ async def delist(keypair, log_level):
     "--keypair",
     default=get_market_keypair_path(),
     help="Enter the path to the payer keypair. Defaults to the set config keypair",
+)
+@click.option(
+    "-l",
+    "--log_level",
+    default=2,
+    type=int,
+    help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors",
 )
 async def buy(keypair, log_level):
     assert log_level >= 0 and log_level <= 5, "Log level must be between 0 and 5"
@@ -1297,6 +1308,19 @@ async def request_mediation(keypair, log_level):
 )
 async def mediate(keypair, log_level):
     assert log_level >= 0 and log_level <= 5, "Log level must be between 0 and 5"
+    mediation_shares = {}
+    mediation_shares["buyer"] = click.prompt(
+        "Enter the buyer's mediation share", type=int
+    )
+    mediation_shares["seller"] = click.prompt(
+        "Enter the seller's mediation share", type=int
+    )
+    mediation_shares["team"] = click.prompt(
+        "Enter the team's mediation share", type=int
+    )
+
+    assert sum([v for v in mediation_shares.values()]) == 100, "Mediation shares must add up to 100"
+
     client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
@@ -1349,6 +1373,9 @@ async def validate_secondary_item(keypair, log_level, secondary_item):
     print(t_dets)
 
 
+market_config.add_command(market_set)
+market_config.add_command(market_get)
+
 market.add_command(market_config)
 market.add_command(list_validator)
 market.add_command(delist)
@@ -1357,8 +1384,6 @@ market.add_command(withdraw_rewards)
 market.add_command(request_mediation)
 market.add_command(mediate)
 market.add_command(validate_secondary_item)
-market_config.add_command(market_set)
-market_config.add_command(market_get)
 
 
 entry.add_command(mint)
