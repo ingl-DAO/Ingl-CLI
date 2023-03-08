@@ -117,7 +117,8 @@ def get():
     print("Network: ", get_network())
     print("Keypair: ", get_keypair_path())
     try:
-        print("Keypair Public Key: ", parse_keypair_input(get_keypair_path()).pubkey)
+        print("Keypair Public Key: ", parse_keypair_input(
+            get_keypair_path()).pubkey)
     except Exception as e:
         pass
     print("\nConfig retrieved successfully.")
@@ -364,7 +365,8 @@ async def ingl(keypair, validator, authorized_withdrawer, vote_account, log_leve
 
     if vote_account:
         try:
-            authorized_withdrawer_keypair = parse_keypair_input(authorized_withdrawer)
+            authorized_withdrawer_keypair = parse_keypair_input(
+                authorized_withdrawer)
         except Exception as e:
             print("Invalid Authorized Withdrawer Input. ")
             return
@@ -606,7 +608,8 @@ async def process_create_governance(keypair, mint_id, log_level):
     governed = ["Validator Name", "Program Upgrade"]
     for i in range(len(governed)):
         print(f"{i} : {governed[i]}")
-    numeration = click.prompt("Enter the number of the governed item", type=int)
+    numeration = click.prompt(
+        "Enter the number of the governed item", type=int)
     if numeration not in range(len(governed)):
         print("Invalid Input")
         return
@@ -634,7 +637,8 @@ async def process_create_governance(keypair, mint_id, log_level):
             return
         code_link = click.prompt("Enter the code link: ", type=str)
         title = click.prompt("Enter the new Proposal's Title", type=str)
-        description = click.prompt("Enter the Proposal's Description", type=str)
+        description = click.prompt(
+            "Enter the Proposal's Description", type=str)
 
         t_dets = await init_governance(
             payer_keypair,
@@ -926,6 +930,8 @@ async def process_reset_registry(keypair):
     help="Enter the program_id of the validator instance you want to register. Defaults to the set config program_id",
 )
 async def process_register_program(keypair, program_id):
+    name = click.prompt(
+        "What is the name of the program you want to register :", type=str)
     client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
@@ -939,7 +945,7 @@ async def process_register_program(keypair, program_id):
     except Exception as e:
         print("Invalid Pubkey Input, ", e)
         return
-    t_dets = await register_program(payer_keypair, program_pubkey.pubkey, client)
+    t_dets = await register_program(payer_keypair, program_pubkey.pubkey, client, name)
     print(t_dets)
     await client.close()
 

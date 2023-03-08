@@ -8,7 +8,9 @@ def parse_vote(vote: str) -> bool:
     elif vote == "dissaprove" or vote == "d" or vote == "no" or vote == "n":
         return False
     else:
-        raise ValueError("Vote can only be [a]pprove, [d]issaprove, [y]es or [n]o")
+        raise ValueError(
+            "Vote can only be [a]pprove, [d]issaprove, [y]es or [n]o")
+
 
 
 def parse_proposal(proposal: str) -> Tuple[Optional[PubkeyInput], Optional[int]]:

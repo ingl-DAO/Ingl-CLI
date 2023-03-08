@@ -109,8 +109,23 @@ GeneralData = CStruct(
     "last_feeless_redemption_date" / U32,
     "last_validated_validator_id_proposal" / U32,
     "rebalancing_data" / RebalancingData,
+    "unfinalized_proposals" / HashSet(U32),
     "vote_rewards" / Vec(VoteReward),
 )
+
+NftData = CStruct(
+    "validation_phrase" / U32,
+    "rarity" / Option(U8),
+    "rarity_seed_time" / Option(U32),
+    "funds_location" / U8,
+    "numeration" / U32,
+    "date_created" / U32,
+    "last_withdrawal_epoch" / Option(U64),
+    "last_delegation_epoch" / Option(U64),
+    "all_withdraws" / Vec(U64),
+    "all_votes" / HashMap(U32, Bool),
+)
+
 RegistryConfig = CStruct(
     "validation_phase" / U32,
     "validator_numeration" / U32,
@@ -339,6 +354,7 @@ def set_program_id(program_id: str):
     set_config("program_id", program_id)
 
 
+
 def get_network() -> str:
     network = get_config("network")
     if network == "":
@@ -349,6 +365,7 @@ def get_network() -> str:
 
 def set_network(network: str):
     set_config("network", network)
+
 
 
 def get_keypair_path() -> str:
