@@ -11,6 +11,7 @@ from solana.transaction import Transaction
 from solders.rpc.responses import SendTransactionResp
 from solders.signature import Signature
 import os
+from construct import Adapter
 
 
 class Constants:
@@ -30,20 +31,34 @@ class Constants:
     VALIDATOR_ID_SEED = "validator_ID___________________"
     T_STAKE_ACCOUNT_KEY = "t_stake_account_key"
     T_WITHDRAW_KEY = "t_withdraw_key"
-    INGL_REGISTRY_CONFIG_SEED = 'config'
+    INGL_REGISTRY_CONFIG_SEED = "config"
 
-    TEAM_ACCOUNT_KEY = Pubkey.from_string(
-        "Team111111111111111111111111111111111111111")
-    STAKE_PROGRAM_ID = Pubkey.from_string(
-        "Stake11111111111111111111111111111111111111")
+    PDA_AUTHORIZED_WITHDRAWER_SEED = b"authorized_withdrawer"
+    PROGRAM_STORAGE_SEED = b"program_storage"
+    PDA_UPGRADE_AUTHORITY_SEED = b"upgrade_authority"
+    ESCROW_ACCOUNT_SEED = b"escrow_account"
+    REGISTRY_STORAGE_SEED = b"marketplace_storage"
+
+    ESCROWED_BASIS_POINTS = 2000
+    TEAM_FEES_BASIS_POINTS = 10
+
+    TEAM_ADDRESS = Pubkey.from_string("Et2tm6NsfBZJbEYXtWTv9k51V4tWtQvufexSgXoDRGVA")
+    MEDIATORS = [Pubkey.from_string("Et2tm6NsfBZJbEYXtWTv9k51V4tWtQvufexSgXoDRGVA")]
+
+    STAKE_PROGRAM_ID = Pubkey.from_string("Stake11111111111111111111111111111111111111")
     STAKE_CONFIG_PROGRAM_ID = Pubkey.from_string(
-        "StakeConfig11111111111111111111111111111111")
-    VOTE_PROGRAM_ID = Pubkey.from_string(
-        "Vote111111111111111111111111111111111111111")
+        "StakeConfig11111111111111111111111111111111"
+    )
+    VOTE_PROGRAM_ID = Pubkey.from_string("Vote111111111111111111111111111111111111111")
     BPF_LOADER_UPGRADEABLE = Pubkey.from_string(
-        "BPFLoaderUpgradeab1e11111111111111111111111")
-    REGISTRY_PROGRAM_ID = Pubkey.from_string(
-        "38pfsot7kCZkrttx1THEDXEz4JJXmCCcaDoDieRtVuy5")
+        "BPFLoaderUpgradeab1e11111111111111111111111"
+    )
+    REGISTRY_PROGRAM = Pubkey.from_string(
+        "38pfsot7kCZkrttx1THEDXEz4JJXmCCcaDoDieRtVuy5"
+    )
+    COMPUTE_BUDGET_PROGRAM = Pubkey.from_string(
+        "ComputeBudget111111111111111111111111111111"
+    )
 
 
 VoteReward = CStruct(
@@ -156,12 +171,24 @@ def keypair_from_json(filepath) -> Keypair:
 
 
 class KeypairInput:
-    def __init__(self, t_keypair: Optional[Keypair] = None, ledger_address: Optional[int] = None, pubkey: Optional[Pubkey] = None):
-        assert t_keypair or ledger_address, "KeypairInput must have at least one of keypair or ledger_address"
+    def __init__(
+        self,
+        t_keypair: Optional[Keypair] = None,
+        ledger_address: Optional[int] = None,
+        pubkey: Optional[Pubkey] = None,
+    ):
+        assert (
+            t_keypair or ledger_address
+        ), "KeypairInput must have at least one of keypair or ledger_address"
         self.keypair = t_keypair
         self.ledger_address = ledger_address
-        self.pubkey = pubkey if pubkey else t_keypair.pubkey(
-        ) if t_keypair else Pubkey.new_unique()
+        self.pubkey = (
+            pubkey
+            if pubkey
+            else t_keypair.pubkey()
+            if t_keypair
+            else Pubkey.new_unique()
+        )
 
     def __str__(self):
         return f"KeypairInput(keypair={self.keypair}, ledger_address={self.ledger_address}, pubkey={self.pubkey})"
@@ -181,8 +208,15 @@ def parse_keypair_input(str_input: str) -> KeypairInput:
 
 
 class PubkeyInput:
-    def __init__(self, t_keypair: Optional[Keypair] = None, pubkey: Optional[Pubkey] = None, ledger_address: Optional[int] = None):
-        assert t_keypair or pubkey or ledger_address, "PubkeyInput must have at least one of keypair, pubkey or ledger_address"
+    def __init__(
+        self,
+        t_keypair: Optional[Keypair] = None,
+        pubkey: Optional[Pubkey] = None,
+        ledger_address: Optional[int] = None,
+    ):
+        assert (
+            t_keypair or pubkey or ledger_address
+        ), "PubkeyInput must have at least one of keypair, pubkey or ledger_address"
         self.keypair = t_keypair
         self.pubkey = t_keypair.pubkey() if t_keypair else pubkey
         self.ledger_address = ledger_address
@@ -212,7 +246,9 @@ def parse_pubkey_input(str_input: str) -> PubkeyInput:
                 raise new_e
 
 
-async def sign_and_send_tx(tx: Transaction, client: AsyncClient, *args) -> SendTransactionResp:
+async def sign_and_send_tx(
+    tx: Transaction, client: AsyncClient, *args, skip_preflight: bool = False
+) -> SendTransactionResp:
     last_valid_block_height = None
     if client.blockhash_cache:
         try:
@@ -220,7 +256,8 @@ async def sign_and_send_tx(tx: Transaction, client: AsyncClient, *args) -> SendT
         except ValueError:
             blockhash_resp = await client.get_latest_blockhash(Finalized)
             recent_blockhash = client._process_blockhash_resp(
-                blockhash_resp, used_immediately=True)
+                blockhash_resp, used_immediately=True
+            )
             last_valid_block_height = blockhash_resp.value.last_valid_block_height
     else:
         blockhash_resp = await client.get_latest_blockhash(Finalized)
@@ -240,16 +277,21 @@ async def sign_and_send_tx(tx: Transaction, client: AsyncClient, *args) -> SendT
                 message = await make_message(tx, client, False)
                 # print("message: ", message)
                 signature = Signature.from_bytes(
-                    t_dongle.sign(message, arg.ledger_address))
+                    t_dongle.sign(message, arg.ledger_address)
+                )
                 tx.add_signature(arg.pubkey, signature)
             else:
                 raise Exception("KeypairInput is not valid")
         else:
             raise ValueError(
-                "Invalid argument expected a KeypairInput, Found -> : " + str(type(arg)))
+                "Invalid argument expected a KeypairInput, Found -> : " + str(type(arg))
+            )
     # print("Reached here")
-    opts_to_use = types.TxOpts(preflight_commitment=client._commitment,
-                               last_valid_block_height=last_valid_block_height)
+    opts_to_use = types.TxOpts(
+        preflight_commitment=client._commitment,
+        last_valid_block_height=last_valid_block_height,
+        skip_preflight=skip_preflight,
+    )
     txn_resp = await client.send_raw_transaction(tx.serialize(), opts=opts_to_use)
     if client.blockhash_cache:
         blockhash_resp = await client.get_latest_blockhash(Finalized)
@@ -258,18 +300,33 @@ async def sign_and_send_tx(tx: Transaction, client: AsyncClient, *args) -> SendT
     return txn_resp
 
 
+async def sign_send_confirm_return_tx_as_link(
+    tx: Transaction, client: AsyncClient, *args
+) -> str:
+    # Sign Transaction, Send Transaction, and Confirm Transaction, Return Transaction Signature
+    try:
+        t_dets = await sign_and_send_tx(tx, client, *args)
+        await client.confirm_transaction(
+            tx_sig=t_dets.value, commitment="finalized", sleep_seconds=0.4
+        )
+
+        return f"Transaction Id: [link=https://explorer.solana.com/tx/{str(t_dets.value)+get_explorer_suffix(get_network())}]{str(t_dets.value)}[/link]"
+    except Exception as e:
+        return f"Error: {e}"
+
+
 def set_config(key: str, value: str):
     file_dir = f"{os.path.expanduser('~')}/.config/solana/ingl/"
     os.makedirs(file_dir, exist_ok=True)
     file_dir = file_dir + "config.json"
     try:
-        f = open(file_dir, 'r')
+        f = open(file_dir, "r")
         config = json.load(f)
         f.close()
     except:
         config = {}
     config[key] = value
-    with open(file_dir, 'w') as f:
+    with open(file_dir, "w") as f:
         json.dump(config, f)
 
 
@@ -278,7 +335,7 @@ def get_config(key: str) -> str:
     os.makedirs(file_dir, exist_ok=True)
     file_dir = file_dir + "config.json"
     try:
-        f = open(file_dir, 'r')
+        f = open(file_dir, "r")
         config = json.load(f)
         f.close()
         if key in config:
@@ -290,7 +347,7 @@ def get_config(key: str) -> str:
 
 
 def get_program_id() -> Pubkey:
-    program_id_str = get_config('program_id')
+    program_id_str = get_config("program_id")
     try:
         return Pubkey.from_string(program_id_str)
     except:
@@ -298,25 +355,25 @@ def get_program_id() -> Pubkey:
 
 
 def set_program_id(program_id: str):
-    set_config('program_id', program_id)
+    set_config("program_id", program_id)
 
 
 def get_network() -> str:
-    network = get_config('network')
+    network = get_config("network")
     if network == "":
-        return get_network_url(network='devnet')
+        return get_network_url(network="devnet")
     else:
         return network
 
 
 def set_network(network: str):
-    set_config('network', network)
+    set_config("network", network)
 
 
 def get_keypair_path() -> str:
-    keypair_path = get_config('keypair_path')
+    keypair_path = get_config("keypair_path")
     if keypair_path == "":
-        return f"{os.path.expanduser('~')}/.config/solana/ingl/id.json"
+        return f"{os.path.expanduser('~')}/.config/solana/id.json"
     else:
         return keypair_path
 
@@ -328,7 +385,42 @@ def set_keypair_path(keypair_path: str) -> bool:
     except:
         print("Invalid keypair path")
         return False
-    set_config('keypair_path', path)
+    set_config("keypair_path", path)
+    print("Keypair path set to: ", path)
+    print("Keypair Public Key: ", keypair.pubkey())
+    return True
+
+
+def get_market_program_id() -> Pubkey:
+    program_id_str = get_config("markets_program_id")
+    try:
+        return Pubkey.from_string(program_id_str)
+    except:
+        raise Exception(
+            "Invalid markets program id, please set one with: ingl markets config set -p <program_id>"
+        )
+
+
+def set_market_program_id(program_id: str):
+    set_config("markets_program_id", program_id)
+
+
+def get_market_keypair_path() -> str:
+    keypair_path = get_config("markets_keypair_path")
+    if keypair_path == "":
+        return f"{os.path.expanduser('~')}/.config/solana/id.json"
+    else:
+        return keypair_path
+
+
+def set_market_keypair_path(keypair_path: str) -> bool:
+    path = os.path.abspath(keypair_path)
+    try:
+        keypair = keypair_from_json(path)
+    except:
+        print("Invalid keypair path")
+        return False
+    set_config("markets_keypair_path", path)
     print("Keypair path set to: ", path)
     print("Keypair Public Key: ", keypair.pubkey())
     return True
