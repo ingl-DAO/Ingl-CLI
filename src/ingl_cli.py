@@ -117,8 +117,7 @@ def get():
     print("Network: ", get_network())
     print("Keypair: ", get_keypair_path())
     try:
-        print("Keypair Public Key: ", parse_keypair_input(
-            get_keypair_path()).pubkey)
+        print("Keypair Public Key: ", parse_keypair_input(get_keypair_path()).pubkey)
     except Exception as e:
         pass
     print("\nConfig retrieved successfully.")
@@ -213,6 +212,12 @@ async def finalize_rebalancing(keypair, log_level):
     help="Enter the path to the authorized_withdrawer keypair of the vote account you seek to fractionalize if already created",
 )
 @click.option(
+    "--upgrade_authority",
+    "-ua",
+    default=get_keypair_path(),
+    help="Enter the path to the upgrade authority of the program instance in question",
+)
+@click.option(
     "--vote_account",
     "-va",
     default=None,
@@ -225,7 +230,43 @@ async def finalize_rebalancing(keypair, log_level):
     type=int,
     help="Precise Log_level you want the transaction to be logged at, and above(0 -> 5). 0: All logs,  ... 5: Only Errors",
 )
-async def ingl(keypair, validator, authorized_withdrawer, vote_account, log_level):
+async def ingl(
+    keypair,
+    validator,
+    authorized_withdrawer,
+    upgrade_authority,
+    vote_account,
+    log_level,
+):
+
+    try:
+        payer_keypair = parse_keypair_input(keypair)
+    except Exception as e:
+        print("Invalid Keypair Input. ")
+        return
+    try:
+        validator_key = parse_pubkey_input(validator)
+    except Exception as e:
+        print("Invalid Validator Input. ")
+        return
+    try:
+        upgrade_authority_keypair = parse_keypair_input(upgrade_authority)
+    except Exception as e:
+        print("Invalid Upgrade Authority Input. ")
+        return
+
+    if vote_account:
+        try:
+            authorized_withdrawer_keypair = parse_keypair_input(authorized_withdrawer)
+        except Exception as e:
+            print("Invalid Authorized Withdrawer Input. ")
+            return
+
+        try:
+            vote_account_key = parse_pubkey_input(vote_account)
+        except Exception as e:
+            print("Invalid Vote Account Input. ")
+            return
 
     init_commission = 105
     counter = 0
@@ -352,34 +393,12 @@ async def ingl(keypair, validator, authorized_withdrawer, vote_account, log_leve
     client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
-    try:
-        payer_keypair = parse_keypair_input(keypair)
-    except Exception as e:
-        print("Invalid Keypair Input. ")
-        return
-    try:
-        validator_key = parse_pubkey_input(validator)
-    except Exception as e:
-        print("Invalid Validator Input. ")
-        return
 
     if vote_account:
-        try:
-            authorized_withdrawer_keypair = parse_keypair_input(
-                authorized_withdrawer)
-        except Exception as e:
-            print("Invalid Authorized Withdrawer Input. ")
-            return
-
-        try:
-            vote_account_key = parse_pubkey_input(vote_account)
-        except Exception as e:
-            print("Invalid Vote Account Input. ")
-            return
-
         t_dets = await fractionalize_existing(
             payer_keypair,
             authorized_withdrawer_keypair,
+            upgrade_authority_keypair,
             vote_account_key,
             validator_key,
             init_commission,
@@ -407,6 +426,7 @@ async def ingl(keypair, validator, authorized_withdrawer, vote_account, log_leve
     else:
         t_dets = await ingl_init(
             payer_keypair,
+            upgrade_authority_keypair,
             validator_key,
             init_commission,
             max_primary_stake,
@@ -608,8 +628,7 @@ async def process_create_governance(keypair, mint_id, log_level):
     governed = ["Validator Name", "Program Upgrade"]
     for i in range(len(governed)):
         print(f"{i} : {governed[i]}")
-    numeration = click.prompt(
-        "Enter the number of the governed item", type=int)
+    numeration = click.prompt("Enter the number of the governed item", type=int)
     if numeration not in range(len(governed)):
         print("Invalid Input")
         return
@@ -637,8 +656,7 @@ async def process_create_governance(keypair, mint_id, log_level):
             return
         code_link = click.prompt("Enter the code link: ", type=str)
         title = click.prompt("Enter the new Proposal's Title", type=str)
-        description = click.prompt(
-            "Enter the Proposal's Description", type=str)
+        description = click.prompt("Enter the Proposal's Description", type=str)
 
         t_dets = await init_governance(
             payer_keypair,
@@ -931,7 +949,8 @@ async def process_reset_registry(keypair):
 )
 async def process_register_program(keypair, program_id):
     name = click.prompt(
-        "What is the name of the program you want to register :", type=str)
+        "What is the name of the program you want to register :", type=str
+    )
     client = AsyncClient(get_network())
     client_state = await client.is_connected()
     print("Client is connected" if client_state else "Client is Disconnected")
@@ -1325,7 +1344,9 @@ async def mediate(keypair, log_level):
         "Enter the team's mediation share", type=int
     )
 
-    assert sum([v for v in mediation_shares.values()]) == 100, "Mediation shares must add up to 100"
+    assert (
+        sum([v for v in mediation_shares.values()]) == 100
+    ), "Mediation shares must add up to 100"
 
     client = AsyncClient(get_network())
     client_state = await client.is_connected()

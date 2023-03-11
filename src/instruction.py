@@ -80,6 +80,7 @@ RegistryEnum = Enum(
     "InitConfig",
     "AddProgram",
     "RemovePrograms" / CStruct("program_count" / U8),
+    "AddMarketplaceProgram",
     "Reset",
     "Blank",
     enum_name="RegistryEnum",

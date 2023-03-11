@@ -56,6 +56,9 @@ class Constants:
     REGISTRY_PROGRAM = Pubkey.from_string(
         "38pfsot7kCZkrttx1THEDXEz4JJXmCCcaDoDieRtVuy5"
     )
+    COMPUTE_BUDGET_PROGRAM = Pubkey.from_string(
+        "ComputeBudget111111111111111111111111111111"
+    )
 
 
 VoteReward = CStruct(
@@ -244,7 +247,7 @@ def parse_pubkey_input(str_input: str) -> PubkeyInput:
 
 
 async def sign_and_send_tx(
-    tx: Transaction, client: AsyncClient, *args
+    tx: Transaction, client: AsyncClient, *args, skip_preflight: bool = False
 ) -> SendTransactionResp:
     last_valid_block_height = None
     if client.blockhash_cache:
@@ -287,6 +290,7 @@ async def sign_and_send_tx(
     opts_to_use = types.TxOpts(
         preflight_commitment=client._commitment,
         last_valid_block_height=last_valid_block_height,
+        skip_preflight=skip_preflight,
     )
     txn_resp = await client.send_raw_transaction(tx.serialize(), opts=opts_to_use)
     if client.blockhash_cache:
@@ -354,7 +358,6 @@ def set_program_id(program_id: str):
     set_config("program_id", program_id)
 
 
-
 def get_network() -> str:
     network = get_config("network")
     if network == "":
@@ -365,7 +368,6 @@ def get_network() -> str:
 
 def set_network(network: str):
     set_config("network", network)
-
 
 
 def get_keypair_path() -> str:
